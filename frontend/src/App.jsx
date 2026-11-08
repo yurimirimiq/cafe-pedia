@@ -2,6 +2,7 @@ import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from 'react-rou
 import { AuthProvider, useAuth } from './auth'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import Place from './pages/Place'
 import Search from './pages/Search'
 import Signup from './pages/Signup'
 
@@ -51,7 +52,7 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/place/:id" element={<Soon title="장소 상세" />} />
+          <Route path="/place/:id" element={<Place />} />
           <Route path="/calendar" element={<RequireAuth><Soon title="캘린더" /></RequireAuth>} />
           <Route path="/me" element={<RequireAuth><Soon title="나의 기록" /></RequireAuth>} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />

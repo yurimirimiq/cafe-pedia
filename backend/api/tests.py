@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.utils import timezone
 
 
 class HelloApiTest(TestCase):
@@ -221,3 +222,82 @@ class PlaceSearchApiTest(TestCase):
         with patch.dict('os.environ', {'KAKAO_REST_API_KEY': ''}):
             with self.assertRaises(kakao.KakaoError):
                 kakao.search_places('망원동')
+
+
+from datetime import timedelta
+
+from rest_framework.test import APITestCase
+
+
+class ReviewApiTest(APITestCase):
+    def setUp(self):
+        self.place = Place.objects.create(
+            kakao_id='1', category=Place.Category.CAFE, name='카페 온기', address='서울 마포구',
+            latitude=0, longitude=0,
+        )
+        self.url = f'/api/places/{self.place.id}/'
+        self.me = User.objects.create_user(username='me', password='x', nickname='나')
+        self.other = User.objects.create_user(username='other', password='x', nickname='남')
+
+    def put_review(self, user, **data):
+        self.client.force_authenticate(user)  # JWT 대신 테스트용으로 로그인 처리
+        return self.client.put(self.url + 'review/', data, format='json')
+
+    def test_detail_for_anonymous(self):
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['name'], '카페 온기')
+        self.assertIsNone(res.json()['my_review'])
+        self.assertIsNone(res.json()['avg_rating'])
+
+    def test_detail_404(self):
+        self.assertEqual(self.client.get('/api/places/9999/').status_code, 404)
+
+    def test_create_then_update_review(self):
+        res = self.put_review(self.me, rating='4.0', comment='라떼 맛집')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['avg_rating'], '4.0')
+        self.assertEqual(res.json()['my_review']['visited_on'], str(timezone.localdate()))
+        # 같은 장소에 다시 PUT 하면 새로 만들지 않고 고친다 (보낸 값만 바뀜)
+        res = self.put_review(self.me, rating='3.5')
+        self.assertEqual(Review.objects.count(), 1)
+        self.assertEqual(res.json()['my_review']['comment'], '라떼 맛집')
+        self.assertEqual(res.json()['my_review']['rating'], '3.5')
+
+    def test_average_across_users(self):
+        self.put_review(self.me, rating='4.0')
+        res = self.put_review(self.other, rating='5.0')
+        self.assertEqual(res.json()['avg_rating'], '4.5')
+        self.assertEqual(res.json()['review_count'], 2)
+
+    def test_rejects_bad_rating_and_future_date(self):
+        self.assertEqual(self.put_review(self.me, rating='3.7').status_code, 400)
+        self.assertEqual(self.put_review(self.me, rating='0').status_code, 400)
+        tomorrow = str(timezone.localdate() + timedelta(days=1))
+        self.assertEqual(self.put_review(self.me, rating='4.0', visited_on=tomorrow).status_code, 400)
+
+    def test_review_requires_login(self):
+        res = self.client.put(self.url + 'review/', {'rating': '4.0'}, format='json')
+        self.assertEqual(res.status_code, 401)
+
+    def test_delete_review(self):
+        self.put_review(self.me, rating='4.0')
+        res = self.client.delete(self.url + 'review/')
+        self.assertIsNone(res.json()['my_review'])
+        self.assertEqual(res.json()['review_count'], 0)
+
+    def test_detail_shows_my_review_and_only_comments(self):
+        self.put_review(self.other, rating='5.0', comment='또 갈래요')
+        self.put_review(self.me, rating='3.0')  # 한 줄 평 없이 별점만
+        res = self.client.get(self.url).json()
+        self.assertEqual(res['my_review']['rating'], '3.0')
+        self.assertEqual([c['nickname'] for c in res['comments']], ['남'])
+
+    def test_wish_toggle(self):
+        self.client.force_authenticate(self.me)
+        self.assertTrue(self.client.post(self.url + 'wish/').json()['wished'])
+        self.client.post(self.url + 'wish/')  # 두 번 눌러도 하나만
+        self.assertEqual(Wishlist.objects.count(), 1)
+        self.assertTrue(self.client.get(self.url).json()['wished'])
+        self.assertFalse(self.client.delete(self.url + 'wish/').json()['wished'])
+        self.assertEqual(Wishlist.objects.count(), 0)

@@ -1,4 +1,5 @@
 from django.db.models import Avg, Count
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -6,8 +7,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 from . import kakao
-from .models import Place
-from .serializers import PlaceSerializer, SignupSerializer, UserSerializer
+from .models import Place, Review, Wishlist
+from .serializers import (
+    MyReviewSerializer,
+    PlaceSerializer,
+    ReviewSerializer,
+    SignupSerializer,
+    UserSerializer,
+)
 
 
 @api_view(['GET'])
@@ -78,3 +85,58 @@ def search_places(request):
     # 카카오가 준 순서(관련도 순)를 그대로 유지한다
     places = {p.kakao_id: p for p in with_ratings(Place.objects.filter(kakao_id__in=kakao_ids))}
     return Response(PlaceSerializer([places[k] for k in kakao_ids], many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def place_detail(request, place_id):
+    """장소 상세: 장소 정보 + 평균 별점 + 한 줄 평 목록 (+ 로그인했다면 내 별점·가고 싶어요 여부)"""
+    place = get_object_or_404(with_ratings(Place.objects.all()), pk=place_id)
+    reviews = place.reviews.select_related('user').exclude(comment='')[:20]
+    data = {
+        **PlaceSerializer(place).data,
+        'comments': ReviewSerializer(reviews, many=True).data,
+        'my_review': None,
+        'wished': False,
+    }
+    if request.user.is_authenticated:
+        mine = place.reviews.filter(user=request.user).first()
+        data['my_review'] = MyReviewSerializer(mine).data if mine else None
+        data['wished'] = place.wishlisted_by.filter(user=request.user).exists()
+    return Response(data)
+
+
+def place_summary(place_id):
+    """별점이 바뀐 뒤 새 평균 별점·평가 수를 돌려주기 위한 헬퍼"""
+    place = with_ratings(Place.objects.filter(pk=place_id)).get()
+    return {'avg_rating': PlaceSerializer(place).data['avg_rating'], 'review_count': place.review_count}
+
+
+@api_view(['PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def my_review(request, place_id):
+    """내 별점 남기기·고치기(PUT) / 지우기(DELETE). 한 장소에 하나라서 있으면 수정한다"""
+    place = get_object_or_404(Place, pk=place_id)
+    review = Review.objects.filter(user=request.user, place=place).first()
+
+    if request.method == 'DELETE':
+        if review:
+            review.delete()
+        return Response({'my_review': None, **place_summary(place_id)})
+
+    serializer = MyReviewSerializer(review, data=request.data, partial=review is not None)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(user=request.user, place=place)
+    return Response({'my_review': serializer.data, **place_summary(place_id)})
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def wish(request, place_id):
+    """가고 싶어요 추가(POST) / 취소(DELETE)"""
+    place = get_object_or_404(Place, pk=place_id)
+    if request.method == 'POST':
+        Wishlist.objects.get_or_create(user=request.user, place=place)
+    else:
+        Wishlist.objects.filter(user=request.user, place=place).delete()
+    return Response({'wished': request.method == 'POST'})

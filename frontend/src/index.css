@@ -78,3 +78,51 @@ a { color: inherit; text-decoration: none; }
 .result-body .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rating { font-size: 14px; color: var(--brown); font-weight: 600; white-space: nowrap; }
 .credit { margin-top: 24px; }
+
+/* 별점 입력: 별 하나를 왼쪽 반(0.5)·오른쪽 반(1.0) 버튼으로 나눈다 */
+.stars-input { display: inline-flex; flex-direction: column; }
+.rating-word { font-size: 14px; font-weight: 600; color: var(--brown); min-height: 20px; }
+.stars { display: flex; }
+.star { position: relative; font-size: 36px; line-height: 1.1; width: 1em; }
+.star-bg { color: var(--line); }
+.star-fill { position: absolute; left: 0; top: 0; overflow: hidden; color: var(--brown); }
+.star .half { position: absolute; top: 0; bottom: 0; width: 50%; border: 0; padding: 0; background: none; cursor: pointer; }
+.star .half.left { left: 0; }
+.star .half.right { right: 0; }
+.star .half:disabled { cursor: default; }
+
+/* 장소 상세 */
+.place-head { display: grid; grid-template-columns: 180px minmax(0, 1fr) 280px; gap: 32px; align-items: start; }
+.place-main h1 { margin: 0; font-size: 32px; }
+.place-main > p { margin: 4px 0 0; }
+.avg { display: flex; align-items: baseline; gap: 10px; margin: 20px 0 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.avg-num { font-size: 48px; font-weight: 700; color: var(--brown); line-height: 1; letter-spacing: -0.03em; }
+.actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.actions .btn { padding: 9px 14px; font-size: 14px; }
+.actions .btn[aria-pressed='true'] { background: var(--brown); color: #fff; }
+.visit { display: inline-flex; align-items: center; gap: 6px; }
+.visit input { font: inherit; border: 0; background: none; color: inherit; }
+.comment-form { margin-top: 12px; }
+.comment-form textarea { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+.comment-form textarea:focus { border-color: var(--brown); outline: none; }
+.comment-form div { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
+.comment-form .small { margin-right: auto; }
+.map { height: 180px; border-radius: 8px; background: #f7f4f1; }
+.map-empty { display: flex; align-items: center; justify-content: center; color: var(--mute); }
+.map-link { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--brown); }
+.comments { margin-top: 40px; }
+.comments h2 { font-size: 18px; }
+.comments ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.comment { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: 14px; }
+.comment div { display: flex; justify-content: space-between; }
+.comment p { margin: 6px 0 0; color: #5c514a; }
+
+@media (max-width: 900px) {
+  .place-head { grid-template-columns: 120px minmax(0, 1fr); }
+  .place-head .map-box { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .place-head { grid-template-columns: 1fr; gap: 16px; }
+  .place-head .poster { width: 96px !important; }
+  .place-main h1 { font-size: 26px; }
+}

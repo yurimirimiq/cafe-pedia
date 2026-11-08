@@ -1,9 +1,10 @@
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from .models import Place, User
+from .models import Place, Review, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -39,7 +40,7 @@ class PlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Place
         fields = [
-            'id', 'name', 'category', 'category_label', 'category_detail',
+            'id', 'kakao_id', 'name', 'category', 'category_label', 'category_detail',
             'address', 'latitude', 'longitude', 'avg_rating', 'review_count',
         ]
 
@@ -52,3 +53,26 @@ class SafeTokenRefreshSerializer(TokenRefreshSerializer):
             return super().validate(attrs)
         except User.DoesNotExist:
             raise AuthenticationFailed('사용자를 찾을 수 없어요. 다시 로그인하세요.')
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """다른 사람에게 보여줄 리뷰 (닉네임만 공개)"""
+
+    nickname = serializers.CharField(source='user.nickname', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'nickname', 'rating', 'comment', 'visited_on', 'updated_at']
+
+
+class MyReviewSerializer(serializers.ModelSerializer):
+    """내 별점 저장용. 별점 범위·0.5 단위 검사는 모델의 validators 를 그대로 쓴다"""
+
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment', 'visited_on']
+
+    def validate_visited_on(self, value):
+        if value > timezone.localdate():
+            raise serializers.ValidationError('미래 날짜는 고를 수 없어요.')
+        return value
