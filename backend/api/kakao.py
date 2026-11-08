@@ -16,6 +16,7 @@ class KakaoError(Exception):
 
 
 CATEGORY_URL = 'https://dapi.kakao.com/v2/local/search/category.json'
+IMAGE_URL = 'https://dapi.kakao.com/v2/search/image'
 
 
 def _get(url, params):
@@ -56,3 +57,9 @@ def search_places(query, category=None):
         params['category_group_code'] = category
     documents = _get(SEARCH_URL, params)
     return [d for d in documents if d['category_group_code'] in ALLOWED_CATEGORIES]
+
+
+def image_search(query):
+    """다음(카카오) 이미지 검색에서 가장 정확한 결과 1개 → (썸네일 주소, 출처 글 주소) 또는 None"""
+    documents = _get(IMAGE_URL, {'query': query, 'sort': 'accuracy', 'size': 1})
+    return (documents[0]['thumbnail_url'], documents[0]['doc_url']) if documents else None

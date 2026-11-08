@@ -36,10 +36,22 @@ class Place(models.Model):
     # 위도·경도: 소수점 7자리면 약 1cm 정밀도
     latitude = models.DecimalField('위도', max_digits=10, decimal_places=7)
     longitude = models.DecimalField('경도', max_digits=10, decimal_places=7)
+    # 썸네일: 카카오 이미지 검색 결과 (사진 주소 + 출처 글 주소). 한 번 찾으면 저장해 두고 다시 찾지 않는다
+    thumbnail_url = models.URLField('썸네일', max_length=500, blank=True)
+    thumbnail_source = models.URLField('썸네일 출처', max_length=500, blank=True)
+    thumbnail_checked_at = models.DateTimeField('썸네일 찾은 시각', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
+
+# 별점 남길 때 고르는 키워드 (분류별). 리뷰에는 이 글자 그대로 저장한다
+TAG_OPTIONS = {
+    'CE7': ['커피 맛집', '디저트 맛집', '작업하기 좋음', '조용함', '대화하기 좋음', '뷰 맛집', '좌석 넓음', '콘센트 많음'],
+    'FD6': ['혼밥하기 좋음', '가성비', '양 많음', '데이트', '모임하기 좋음', '웨이팅 있음', '친절함', '또 갈래요'],
+}
+MAX_TAGS = 3
 
 
 def validate_half_step(value):
@@ -63,6 +75,8 @@ class Review(models.Model):
     # 캘린더에 표시할 방문 날짜 (기본값: 평가한 날)
     # shortcut: 장소당 리뷰 1개라 재방문은 날짜만 바뀜, 방문 기록을 여러 개 남기려면 Visit 모델 분리
     visited_on = models.DateField('방문일', default=timezone.localdate)
+    # 고른 키워드 최대 3개 (예: ["커피 맛집", "조용함"])
+    tags = models.JSONField('키워드', default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

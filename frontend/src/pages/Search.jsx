@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../api'
+import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 
 const CATEGORIES = [
@@ -8,9 +9,6 @@ const CATEGORIES = [
   ['CE7', '카페'],
   ['FD6', '식당'],
 ]
-
-// "음식점 > 한식 > 국밥" → "국밥"
-const shortCategory = (detail) => detail.split(' > ').at(-1)
 
 export default function Search() {
   // 검색어·분류를 주소(?q=...&category=...)에 담아 두면 뒤로 가기·새로고침해도 결과가 유지된다
@@ -77,9 +75,7 @@ export default function Search() {
                 <Poster place={p} size={64} />
                 <div className="result-body">
                   <strong>{p.name}</strong>
-                  <span className="muted">
-                    {[p.category_label, shortCategory(p.category_detail)].filter((v, i, a) => a.indexOf(v) === i).join(', ')}
-                  </span>
+                  <span className="muted">{[p.category_label, ...keywords(p, 2)].filter((v, i, a) => a.indexOf(v) === i).join(' · ')}</span>
                   <span className="muted small">{p.address}</span>
                 </div>
                 <span className="rating">

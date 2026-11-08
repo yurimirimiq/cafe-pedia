@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../api'
+import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 
 const CATEGORIES = [['', '전체'], ['CE7', '카페'], ['FD6', '식당']]
@@ -91,7 +92,7 @@ export default function Nearby() {
                 <Poster place={p} size={64} />
                 <div className="result-body">
                   <strong>{p.name}</strong>
-                  <span className="muted">{p.category_label}, {meters(p.distance)}</span>
+                  <span className="muted">{meters(p.distance)} · {[p.category_label, ...keywords(p, 2)].filter((v, i, a) => a.indexOf(v) === i).join(' · ')}</span>
                   <span className="muted small">{p.address}</span>
                 </div>
                 <span className="rating">{p.review_count ? `★ ${p.avg_rating}` : '평가 없음'}</span>

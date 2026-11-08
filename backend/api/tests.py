@@ -1,4 +1,8 @@
 from django.test import TestCase
+from unittest.mock import patch as _patch
+
+# 테스트에서는 실제 카카오 이미지 검색을 부르지 않는다 (썸네일 테스트만 따로 바꿔 끼움)
+_patch('api.kakao.image_search', return_value=None).start()
 from django.utils import timezone
 
 
@@ -410,3 +414,74 @@ class NearbyApiTest(TestCase):
         with patch('api.kakao._get', side_effect=lambda url, p: responses[p['category_group_code']]):
             names = [d['place_name'] for d in kakao.nearby_places(37.5, 126.9)]
         self.assertEqual(names, ['식당', '카페'])
+
+
+class TagApiTest(APITestCase):
+    def setUp(self):
+        self.cafe = Place.objects.create(kakao_id='1', category=Place.Category.CAFE, name='카페', address='서울 마포구', latitude=0, longitude=0)
+        self.url = f'/api/places/{self.cafe.id}/'
+        self.users = [User.objects.create_user(username=f'u{i}', password='x', nickname=f'n{i}') for i in range(3)]
+
+    def rate(self, user, tags, rating='4.0'):
+        self.client.force_authenticate(user)
+        return self.client.put(self.url + 'review/', {'rating': rating, 'tags': tags}, format='json')
+
+    def test_save_tags_and_dedupe(self):
+        res = self.rate(self.users[0], ['커피 맛집', '조용함', '커피 맛집'])
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['my_review']['tags'], ['커피 맛집', '조용함'])
+
+    def test_rejects_too_many_and_wrong_category(self):
+        self.assertEqual(self.rate(self.users[0], ['커피 맛집', '조용함', '뷰 맛집', '좌석 넓음']).status_code, 400)
+        res = self.rate(self.users[0], ['가성비'])  # 식당 키워드
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('가성비', str(res.json()))
+        self.assertEqual(self.rate(self.users[0], '커피 맛집').status_code, 400)  # 목록이 아님
+
+    def test_top_tags_by_count_and_options(self):
+        self.rate(self.users[0], ['커피 맛집', '조용함'])
+        self.rate(self.users[1], ['커피 맛집', '뷰 맛집'])
+        self.rate(self.users[2], ['커피 맛집', '조용함', '좌석 넓음'])
+        res = self.client.get(self.url).json()
+        # 3번 / 2번 선택된 순서대로, 세 번째는 1번씩 고른 것 중 하나
+        self.assertEqual(res['top_tags'][:2], ['커피 맛집', '조용함'])
+        self.assertIn(res['top_tags'][2], ['뷰 맛집', '좌석 넓음'])
+        self.assertIn('작업하기 좋음', res['tag_options'])
+        self.assertNotIn('가성비', res['tag_options'])
+
+    def test_updating_rating_keeps_tags(self):
+        self.rate(self.users[0], ['조용함'])
+        self.client.put(self.url + 'review/', {'rating': '5.0'}, format='json')
+        self.assertEqual(Review.objects.get().tags, ['조용함'])
+
+    def test_no_tags_by_default(self):
+        self.client.force_authenticate(self.users[0])
+        self.client.put(self.url + 'review/', {'rating': '3.0'}, format='json')
+        self.assertEqual(self.client.get(self.url).json()['top_tags'], [])
+
+
+
+class ThumbnailTest(APITestCase):
+    def setUp(self):
+        self.place = Place.objects.create(kakao_id='1', category=Place.Category.CAFE, name='카페 온기', address='서울 마포구 망원로 1', latitude=0, longitude=0)
+
+    @patch('api.kakao.image_search', return_value=('https://img/thumb.jpg', 'https://blog/post'))
+    def test_detail_finds_thumbnail_once(self, mock):
+        res = self.client.get(f'/api/places/{self.place.id}/').json()
+        self.assertEqual((res['thumbnail_url'], res['thumbnail_source']), ('https://img/thumb.jpg', 'https://blog/post'))
+        mock.assert_called_once_with('카페 온기 마포구')
+        self.client.get(f'/api/places/{self.place.id}/')
+        self.assertEqual(mock.call_count, 1)  # 저장해 두고 다시 찾지 않는다
+
+    @patch('api.kakao.image_search', return_value=None)
+    def test_no_image_is_remembered(self, mock):
+        self.client.get(f'/api/places/{self.place.id}/')
+        self.client.get(f'/api/places/{self.place.id}/')
+        self.assertEqual(mock.call_count, 1)
+        self.assertEqual(Place.objects.get().thumbnail_url, '')
+
+    @patch('api.kakao.image_search', side_effect=kakao.KakaoError('down'))
+    def test_failure_retries_later(self, mock):
+        res = self.client.get(f'/api/places/{self.place.id}/')
+        self.assertEqual(res.status_code, 200)  # 사진 실패해도 상세는 보인다
+        self.assertIsNone(Place.objects.get().thumbnail_checked_at)

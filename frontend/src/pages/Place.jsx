@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../api'
 import { useAuth } from '../auth'
 import PlaceMap from '../components/PlaceMap'
+import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 import StarRating from '../components/StarRating'
 
@@ -48,6 +49,14 @@ export default function Place() {
     }
   }
 
+  // 키워드 고르기·빼기 (최대 3개). 저장 후 다시 불러와 장소 키워드도 갱신한다
+  async function toggleTag(tag) {
+    const current = place.my_review.tags
+    const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag]
+    if (next.length > 3) return setError('키워드는 3개까지 고를 수 있어요.')
+    if (await saveReview({ tags: next })) load()
+  }
+
   async function removeReview() {
     const res = await apiFetch(`/api/places/${id}/review/`, { method: 'DELETE' })
     setPlace((p) => ({ ...p, ...res }))
@@ -83,10 +92,19 @@ export default function Place() {
   return (
     <article className="page place">
       <div className="place-head">
-        <Poster place={place} />
+        <div>
+          <Poster place={place} />
+          {place.thumbnail_source && (
+            <a className="photo-credit" href={place.thumbnail_source} target="_blank" rel="noreferrer">사진 출처 보기</a>
+          )}
+        </div>
         <div className="place-main">
           <h1>{place.name}</h1>
           <p className="muted">{place.category_detail.split(' > ').slice(1).join(', ') || place.category_label} / {place.address}</p>
+
+          <ul className="keywords" aria-label="키워드">
+            {keywords(place).map((k) => <li key={k}>{k}</li>)}
+          </ul>
 
           <div className="avg">
             {place.avg_rating && <span className="avg-num">{place.avg_rating}</span>}
@@ -106,6 +124,18 @@ export default function Place() {
             </button>
             <button className="btn" onClick={openComment}>{mine?.comment ? '한 줄 평 고치기' : '한 줄 평'}</button>
           </div>
+          {mine && (
+            <div className="tag-picker">
+              <span className="muted small">이곳을 키워드로 표현하면? (최대 3개)</span>
+              <div className="chips">
+                {place.tag_options.map((t) => (
+                  <button key={t} className={`chip${mine.tags.includes(t) ? ' on' : ''}`} aria-pressed={mine.tags.includes(t)} onClick={() => toggleTag(t)} disabled={busy}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {mine && <button className="link small" onClick={removeReview}>평가 지우기</button>}
           {error && <p className="error" role="alert">{error}</p>}
 
@@ -133,6 +163,7 @@ export default function Place() {
               <li key={c.id} className="comment">
                 <div><strong>{c.nickname}</strong><span className="rating">★ {c.rating}</span></div>
                 <p>{c.comment}</p>
+                {c.tags.length > 0 && <p className="muted small">{c.tags.join(' · ')}</p>}
               </li>
             ))}
           </ul>

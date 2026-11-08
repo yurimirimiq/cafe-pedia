@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Max, Q
@@ -10,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 from . import kakao
-from .models import Place, Review, Wishlist
+from .models import TAG_OPTIONS, Place, Review, Wishlist
 from .serializers import (
     MyReviewSerializer,
     PlaceSerializer,
@@ -91,9 +92,33 @@ def save_places(documents):
         )
         kakao_ids.append(d['id'])
 
+    fill_thumbnails(Place.objects.filter(kakao_id__in=kakao_ids, thumbnail_checked_at__isnull=True))
     # 카카오가 준 순서(관련도 순·거리 순)를 그대로 유지한다
     places = {p.kakao_id: p for p in with_ratings(Place.objects.filter(kakao_id__in=kakao_ids))}
     return [places[k] for k in kakao_ids]
+
+
+def fill_thumbnails(places):
+    """아직 썸네일을 찾지 않은 장소들의 사진을 카카오 이미지 검색으로 찾아 저장한다 (동시에 여러 개)"""
+
+    def find(place):
+        area = ' '.join(place.address.split()[1:2])  # "서울 마포구 망원로 1" → "마포구"
+        try:
+            return kakao.image_search(f'{place.name} {area}') or ('', '')
+        except kakao.KakaoError:
+            return None  # 실패하면 저장하지 않고 다음에 다시 시도
+
+    places = list(places)
+    if not places:
+        return
+    # 카카오 호출(네트워크)만 동시에 하고, DB 저장은 여기(메인 스레드)에서 한다
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(find, places))
+    for place, found in zip(places, results):
+        if found is not None:
+            place.thumbnail_url, place.thumbnail_source = found
+            place.thumbnail_checked_at = timezone.now()
+            place.save(update_fields=['thumbnail_url', 'thumbnail_source', 'thumbnail_checked_at'])
 
 
 @api_view(['GET'])
@@ -132,11 +157,13 @@ def nearby_places(request):
 @permission_classes([AllowAny])
 def place_detail(request, place_id):
     """장소 상세: 장소 정보 + 평균 별점 + 한 줄 평 목록 (+ 로그인했다면 내 별점·가고 싶어요 여부)"""
+    fill_thumbnails(Place.objects.filter(pk=place_id, thumbnail_checked_at__isnull=True))
     place = get_object_or_404(with_ratings(Place.objects.all()), pk=place_id)
     reviews = place.reviews.select_related('user').exclude(comment='')[:20]
     data = {
         **PlaceSerializer(place).data,
         'comments': ReviewSerializer(reviews, many=True).data,
+        'tag_options': TAG_OPTIONS[place.category],
         'my_review': None,
         'wished': False,
     }
@@ -165,7 +192,7 @@ def my_review(request, place_id):
             review.delete()
         return Response({'my_review': None, **place_summary(place_id)})
 
-    serializer = MyReviewSerializer(review, data=request.data, partial=review is not None)
+    serializer = MyReviewSerializer(review, data=request.data, partial=review is not None, context={'place': place})
     serializer.is_valid(raise_exception=True)
     serializer.save(user=request.user, place=place)
     return Response({'my_review': serializer.data, **place_summary(place_id)})
