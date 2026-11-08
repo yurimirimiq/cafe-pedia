@@ -13,7 +13,11 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(serializer_class=SafeTokenRefreshSerializer)),
     path('auth/me/', views.me),
     path('places/search/', views.search_places),
+    path('places/nearby/', views.nearby_places),
     path('places/<int:place_id>/', views.place_detail),
     path('places/<int:place_id>/review/', views.my_review),
     path('places/<int:place_id>/wish/', views.wish),
+    path('home/', views.home),
+    path('me/calendar/', views.my_calendar),
+    path('me/summary/', views.my_summary),
 ]

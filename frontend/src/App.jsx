@@ -1,17 +1,13 @@
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
+import Calendar from './pages/Calendar'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import Me from './pages/Me'
+import Nearby from './pages/Nearby'
 import Place from './pages/Place'
 import Search from './pages/Search'
 import Signup from './pages/Signup'
-
-const Soon = ({ title }) => (
-  <section className="page">
-    <h1>{title}</h1>
-    <p className="muted">곧 만들어요.</p>
-  </section>
-)
 
 // 로그인해야 볼 수 있는 페이지: 로그인 안 했으면 로그인 화면으로 보낸다
 function RequireAuth({ children }) {
@@ -28,9 +24,11 @@ function Layout() {
     <>
       <header className="nav">
         <Link to="/" className="logo">cafepedia</Link>
-        <nav>
+        {/* 넓은 화면: 상단 메뉴 / 좁은 화면: CSS 로 하단 탭 바가 된다 */}
+        <nav className="menu">
           <NavLink to="/" end>홈</NavLink>
           <NavLink to="/search">검색</NavLink>
+          <NavLink to="/nearby">내 주변</NavLink>
           <NavLink to="/calendar">캘린더</NavLink>
           <NavLink to="/me">나의 기록</NavLink>
         </nav>
@@ -52,9 +50,10 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/nearby" element={<Nearby />} />
           <Route path="/place/:id" element={<Place />} />
-          <Route path="/calendar" element={<RequireAuth><Soon title="캘린더" /></RequireAuth>} />
-          <Route path="/me" element={<RequireAuth><Soon title="나의 기록" /></RequireAuth>} />
+          <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
+          <Route path="/me" element={<RequireAuth><Me /></RequireAuth>} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
           <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
         </Routes>

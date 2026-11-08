@@ -301,3 +301,112 @@ class ReviewApiTest(APITestCase):
         self.assertTrue(self.client.get(self.url).json()['wished'])
         self.assertFalse(self.client.delete(self.url + 'wish/').json()['wished'])
         self.assertEqual(Wishlist.objects.count(), 0)
+
+
+class HomeAndMeApiTest(APITestCase):
+    def setUp(self):
+        def place(kid, name, cat):
+            return Place.objects.create(kakao_id=kid, category=cat, name=name, address='서울 마포구', latitude=0, longitude=0)
+
+        self.cafe = place('1', '카페 온기', Place.Category.CAFE)
+        self.cafe2 = place('2', '달빛 카페', Place.Category.CAFE)
+        self.food = place('3', '망원 국밥', Place.Category.RESTAURANT)
+        place('4', '평가 없는 곳', Place.Category.CAFE)
+        self.me = User.objects.create_user(username='me', password='x', nickname='나')
+        self.other = User.objects.create_user(username='other', password='x', nickname='남')
+        today = timezone.localdate()
+        Review.objects.create(user=self.me, place=self.cafe, rating=Decimal('4.0'), comment='좋아요', visited_on=today.replace(day=1))
+        Review.objects.create(user=self.me, place=self.food, rating=Decimal('4.0'), visited_on=today)
+        Review.objects.create(user=self.other, place=self.cafe2, rating=Decimal('5.0'))
+        Wishlist.objects.create(user=self.me, place=self.cafe2)
+        self.today = today
+
+    def test_home_ranking_and_counts(self):
+        res = self.client.get('/api/home/').json()
+        self.assertEqual(res['total_reviews'], 3)
+        # 같은 평균·평가 수면 이름순
+        self.assertEqual([p['name'] for p in res['ranking']], ['달빛 카페', '망원 국밥', '카페 온기'])
+        self.assertIsNotNone(res['featured'])
+
+    def test_home_category_filter(self):
+        res = self.client.get('/api/home/', {'category': 'FD6'}).json()
+        self.assertEqual(res['total_reviews'], 1)
+        self.assertEqual([p['name'] for p in res['ranking']], ['망원 국밥'])
+
+    def test_home_empty(self):
+        Review.objects.all().delete()
+        res = self.client.get('/api/home/').json()
+        self.assertEqual(res['ranking'], [])
+        self.assertIsNone(res['featured'])
+
+    def test_calendar_month_and_filter(self):
+        self.client.force_authenticate(self.me)
+        params = {'year': self.today.year, 'month': self.today.month}
+        res = self.client.get('/api/me/calendar/', params).json()
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0]['rating'], '4.0')
+        self.assertEqual(res[0]['date'], str(self.today.replace(day=1)))  # 방문일 순
+        res = self.client.get('/api/me/calendar/', {**params, 'category': 'CE7'}).json()
+        self.assertEqual([r['place']['name'] for r in res], ['카페 온기'])
+
+    def test_calendar_validates_and_requires_login(self):
+        self.assertEqual(self.client.get('/api/me/calendar/', {'year': 2026, 'month': 11}).status_code, 401)
+        self.client.force_authenticate(self.me)
+        self.assertEqual(self.client.get('/api/me/calendar/', {'year': 2026, 'month': 13}).status_code, 400)
+        self.assertEqual(self.client.get('/api/me/calendar/').status_code, 400)
+
+    def test_summary(self):
+        self.client.force_authenticate(self.me)
+        res = self.client.get('/api/me/summary/').json()
+        self.assertEqual(res['counts'], {'reviews': 2, 'comments': 1, 'wishes': 1, 'cafe': 1, 'restaurant': 1})
+        self.assertEqual(res['distribution']['4.0'], 2)
+        self.assertEqual(res['top_rating'], '4.0')
+        self.assertEqual({p['my_rating'] for p in res['recent']}, {'4.0'})
+        self.assertEqual([p['name'] for p in res['wishlist']], ['달빛 카페'])
+
+    def test_summary_for_new_user(self):
+        self.client.force_authenticate(User.objects.create_user(username='new', password='x', nickname='새'))
+        res = self.client.get('/api/me/summary/').json()
+        self.assertEqual(res['counts']['reviews'], 0)
+        self.assertIsNone(res['top_rating'])
+
+
+class NearbyApiTest(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def nearby(self, **params):
+        return self.client.get('/api/places/nearby/', {'lat': '37.556', 'lng': '126.901', **params})
+
+    @patch('api.kakao.nearby_places')
+    def test_returns_places_with_distance_in_order(self, mock):
+        mock.return_value = [{**kakao_doc('1', '가까운 카페'), 'distance': '120'}, {**kakao_doc('2', '먼 식당', 'FD6'), 'distance': '850'}]
+        res = self.nearby(radius='500')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual([(p['name'], p['distance']) for p in res.json()], [('가까운 카페', 120), ('먼 식당', 850)])
+        mock.assert_called_once_with(37.556, 126.901, None, 500)
+        self.assertEqual(Place.objects.count(), 2)  # 검색처럼 DB에 저장된다
+
+    @patch('api.kakao.nearby_places', return_value=[])
+    def test_radius_is_clamped(self, mock):
+        self.nearby(radius='99999')
+        self.assertEqual(mock.call_args.args[3], 5000)
+
+    def test_rejects_bad_coordinates(self):
+        self.assertEqual(self.client.get('/api/places/nearby/').status_code, 400)
+        self.assertEqual(self.nearby(lat='abc').status_code, 400)
+        self.assertEqual(self.nearby(lat='51.5', lng='-0.12').status_code, 400)  # 국외
+        self.assertEqual(self.nearby(category='AT4').status_code, 400)
+
+    @patch('api.kakao.nearby_places', side_effect=kakao.KakaoError('down'))
+    def test_kakao_failure(self, mock):
+        self.assertEqual(self.nearby().status_code, 502)
+
+    def test_client_merges_cafe_and_restaurant_by_distance(self):
+        responses = {
+            'CE7': [{**kakao_doc('1', '카페'), 'distance': '300'}],
+            'FD6': [{**kakao_doc('2', '식당', 'FD6'), 'distance': '100'}],
+        }
+        with patch('api.kakao._get', side_effect=lambda url, p: responses[p['category_group_code']]):
+            names = [d['place_name'] for d in kakao.nearby_places(37.5, 126.9)]
+        self.assertEqual(names, ['식당', '카페'])

@@ -1,5 +1,8 @@
-from django.db.models import Avg, Count
+from datetime import timedelta
+
+from django.db.models import Avg, Count, Max, Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -66,6 +69,12 @@ def search_places(request):
     except kakao.KakaoError:
         return Response({'detail': '지금은 검색할 수 없어요. 잠시 후 다시 시도하세요.'}, status=status.HTTP_502_BAD_GATEWAY)
 
+    places = save_places(documents)
+    return Response(PlaceSerializer(places, many=True).data)
+
+
+def save_places(documents):
+    """카카오 장소 목록을 DB에 저장(이미 있으면 갱신)하고, 같은 순서로 평균 별점이 붙은 Place 목록을 돌려준다"""
     kakao_ids = []
     for d in documents:
         Place.objects.update_or_create(
@@ -82,9 +91,41 @@ def search_places(request):
         )
         kakao_ids.append(d['id'])
 
-    # 카카오가 준 순서(관련도 순)를 그대로 유지한다
+    # 카카오가 준 순서(관련도 순·거리 순)를 그대로 유지한다
     places = {p.kakao_id: p for p in with_ratings(Place.objects.filter(kakao_id__in=kakao_ids))}
-    return Response(PlaceSerializer([places[k] for k in kakao_ids], many=True).data)
+    return [places[k] for k in kakao_ids]
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle, UserRateThrottle])
+def nearby_places(request):
+    """내 주변: ?lat=37.556&lng=126.901&radius=1000&category=CE7
+
+    위치는 카카오에 검색할 때만 쓰고 저장하지 않는다.
+    """
+    try:
+        lat, lng = float(request.query_params['lat']), float(request.query_params['lng'])
+        radius = int(request.query_params.get('radius', 1000))
+    except (KeyError, ValueError):
+        return Response({'detail': 'lat, lng 를 숫자로 보내 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    # 대한민국 대략 범위 밖이면 카카오가 결과를 주지 않으니 미리 막는다
+    if not (33 <= lat <= 39 and 124 <= lng <= 132):
+        return Response({'detail': '국내 위치에서만 찾을 수 있어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    radius = min(max(radius, 100), 5000)
+    category = request.query_params.get('category') or None
+    if category and category not in kakao.ALLOWED_CATEGORIES:
+        return Response({'detail': '분류는 CE7(카페) 또는 FD6(식당)이에요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        documents = kakao.nearby_places(lat, lng, category, radius)
+    except kakao.KakaoError:
+        return Response({'detail': '지금은 주변을 찾을 수 없어요. 잠시 후 다시 시도하세요.'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    distances = {d['id']: int(d['distance'] or 0) for d in documents}
+    return Response([
+        {**PlaceSerializer(p).data, 'distance': distances[p.kakao_id]} for p in save_places(documents)
+    ])
 
 
 @api_view(['GET'])
@@ -140,3 +181,90 @@ def wish(request, place_id):
     else:
         Wishlist.objects.filter(user=request.user, place=place).delete()
     return Response({'wished': request.method == 'POST'})
+
+
+def category_filter(request):
+    """?category=CE7|FD6 이 있으면 그 분류만, 없으면 전체"""
+    category = request.query_params.get('category')
+    return {'category': category} if category in kakao.ALLOWED_CATEGORIES else {}
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def home(request):
+    """홈 화면: 누적 평가 수, 이번 주 가장 많이 평가된 곳, 인기 랭킹, 최근 평가된 곳"""
+    places = with_ratings(Place.objects.filter(**category_filter(request), reviews__isnull=False).distinct())
+    week_ago = timezone.now() - timedelta(days=7)
+
+    featured = (
+        places.annotate(week_count=Count('reviews', filter=Q(reviews__created_at__gte=week_ago)))
+        .filter(week_count__gt=0)
+        .order_by('-week_count', '-avg_rating')
+        .first()
+    )
+    # shortcut: 평가 1개짜리 5.0점이 1등이 될 수 있음, 평가가 쌓이면 최소 평가 수를 두거나 베이지안 평균으로 바꾼다
+    ranking = places.order_by('-avg_rating', '-review_count', 'name')[:14]
+    recent = places.annotate(last_reviewed=Max('reviews__updated_at')).order_by('-last_reviewed')[:14]
+
+    return Response({
+        'total_reviews': Review.objects.filter(**{f'place__{k}': v for k, v in category_filter(request).items()}).count(),
+        'featured': {**PlaceSerializer(featured).data, 'week_count': featured.week_count} if featured else None,
+        'ranking': PlaceSerializer(ranking, many=True).data,
+        'recent': PlaceSerializer(recent, many=True).data,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_calendar(request):
+    """캘린더: ?year=2026&month=11 → 그 달에 방문한 장소 (방문일 기준)"""
+    try:
+        year, month = int(request.query_params['year']), int(request.query_params['month'])
+        if not 1 <= month <= 12:
+            raise ValueError
+    except (KeyError, ValueError):
+        return Response({'detail': 'year 와 month(1~12)를 숫자로 보내 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    reviews = (
+        request.user.reviews.select_related('place')
+        .filter(visited_on__year=year, visited_on__month=month)
+        .filter(**{f'place__{k}': v for k, v in category_filter(request).items()})
+        .order_by('visited_on')
+    )
+    return Response([
+        {
+            'date': r.visited_on,
+            'rating': str(r.rating),  # 다른 API처럼 "4.0" 문자열로
+            'place': {'id': r.place.id, 'name': r.place.name, 'category': r.place.category},
+        }
+        for r in reviews
+    ])
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_summary(request):
+    """나의 기록: 평가·한 줄 평·가고 싶어요 수, 분류별 평가 수, 별점 분포, 최근 평가, 가고 싶어요 목록"""
+    reviews = request.user.reviews.select_related('place')
+    distribution = {f'{r / 2:.1f}': 0 for r in range(1, 11)}  # "0.5" ~ "5.0"
+    for rating, n in reviews.values_list('rating').annotate(n=Count('id')):
+        distribution[f'{rating:.1f}'] = n
+    top = max(distribution, key=lambda k: (distribution[k], float(k))) if reviews.exists() else None
+
+    def place_with_my_rating(r):
+        return {**PlaceSerializer(with_ratings(Place.objects.filter(pk=r.place_id)).get()).data, 'my_rating': str(r.rating)}
+
+    wished = with_ratings(Place.objects.filter(wishlisted_by__user=request.user)).order_by('-wishlisted_by__created_at')
+    return Response({
+        'counts': {
+            'reviews': reviews.count(),
+            'comments': reviews.exclude(comment='').count(),
+            'wishes': request.user.wishlist.count(),
+            'cafe': reviews.filter(place__category=Place.Category.CAFE).count(),
+            'restaurant': reviews.filter(place__category=Place.Category.RESTAURANT).count(),
+        },
+        'distribution': distribution,
+        'top_rating': top,
+        'recent': [place_with_my_rating(r) for r in reviews.order_by('-updated_at')[:12]],
+        'wishlist': PlaceSerializer(wished[:12], many=True).data,
+    })

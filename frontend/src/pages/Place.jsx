@@ -83,13 +83,13 @@ export default function Place() {
   return (
     <article className="page place">
       <div className="place-head">
-        <Poster place={place} size={180} />
+        <Poster place={place} />
         <div className="place-main">
           <h1>{place.name}</h1>
           <p className="muted">{place.category_detail.split(' > ').slice(1).join(', ') || place.category_label} / {place.address}</p>
 
           <div className="avg">
-            <span className="avg-num">{place.avg_rating ?? '–'}</span>
+            {place.avg_rating && <span className="avg-num">{place.avg_rating}</span>}
             <span className="muted">{place.review_count ? `${place.review_count}명이 평가했어요` : '아직 평가가 없어요. 첫 별점을 남겨 보세요'}</span>
           </div>
 
