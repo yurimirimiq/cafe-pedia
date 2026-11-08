@@ -1,23 +1,71 @@
-import { useEffect, useState } from 'react'
-import { API_URL } from './api'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { AuthProvider, useAuth } from './auth'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 
-// 1단계 확인용 화면: 백엔드 /api/hello/ 응답을 보여준다
-export default function App() {
-  const [message, setMessage] = useState('백엔드에 연결하는 중…')
+const Soon = ({ title }) => (
+  <section className="page">
+    <h1>{title}</h1>
+    <p className="muted">곧 만들어요.</p>
+  </section>
+)
 
-  useEffect(() => {
-    fetch(`${API_URL}/api/hello/`)
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch(() => setMessage('백엔드에 연결하지 못했어요. 백엔드 서버가 켜져 있는지 확인하세요.'))
-  }, [])
+// 로그인해야 볼 수 있는 페이지: 로그인 안 했으면 로그인 화면으로 보낸다
+function RequireAuth({ children }) {
+  const { user } = useAuth()
+  return user ? children : <Navigate to="/login" replace />
+}
+
+function Layout() {
+  const { user, ready, logout } = useAuth()
+  // 저장된 토큰을 확인하는 동안 화면이 깜빡이지 않게 잠깐 기다린다
+  if (!ready) return null
 
   return (
-    <main style={{ padding: '48px 40px' }}>
-      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: 'var(--brown)', letterSpacing: '-0.03em' }}>
-        cafepedia
-      </h1>
-      <p style={{ color: 'var(--mute)' }}>{message}</p>
-    </main>
+    <>
+      <header className="nav">
+        <Link to="/" className="logo">cafepedia</Link>
+        <nav>
+          <NavLink to="/" end>홈</NavLink>
+          <NavLink to="/search">검색</NavLink>
+          <NavLink to="/calendar">캘린더</NavLink>
+          <NavLink to="/me">나의 기록</NavLink>
+        </nav>
+        <div className="nav-right">
+          {user ? (
+            <>
+              <span className="avatar" title={user.nickname}>{user.nickname[0]}</span>
+              <button className="link" onClick={logout}>로그아웃</button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="muted">로그인</Link>
+              <Link to="/signup" className="btn primary small">회원가입</Link>
+            </>
+          )}
+        </div>
+      </header>
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Soon title="검색" />} />
+          <Route path="/calendar" element={<RequireAuth><Soon title="캘린더" /></RequireAuth>} />
+          <Route path="/me" element={<RequireAuth><Soon title="나의 기록" /></RequireAuth>} />
+          <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
+        </Routes>
+      </main>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Layout />
+      </AuthProvider>
+    </BrowserRouter>
   )
 }

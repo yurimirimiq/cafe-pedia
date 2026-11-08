@@ -79,3 +79,55 @@ class AdminTest(TestCase):
         for page in ['user', 'place', 'review', 'wishlist']:
             res = self.client.get(f'/admin/api/{page}/')
             self.assertEqual(res.status_code, 200, page)
+
+
+class AuthApiTest(TestCase):
+    signup_data = {'username': 'yurim', 'nickname': '유림', 'password': 'latte-and-cake-77'}
+
+    def signup(self, **override):
+        return self.client.post('/api/auth/signup/', {**self.signup_data, **override}, content_type='application/json')
+
+    def login(self, password='latte-and-cake-77'):
+        return self.client.post('/api/auth/login/', {'username': 'yurim', 'password': password}, content_type='application/json')
+
+    def test_signup_creates_user_without_returning_password(self):
+        res = self.signup()
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()['nickname'], '유림')
+        self.assertNotIn('password', res.json())
+        # 비밀번호는 평문이 아니라 해시로 저장된다
+        self.assertNotEqual(User.objects.get(username='yurim').password, 'latte-and-cake-77')
+
+    def test_signup_rejects_duplicate_nickname(self):
+        self.signup()
+        res = self.signup(username='other')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('nickname', res.json())
+
+    def test_signup_rejects_weak_password(self):
+        res = self.signup(password='1234')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('password', res.json())
+
+    def test_login_returns_tokens_and_me_works(self):
+        self.signup()
+        res = self.login()
+        self.assertEqual(res.status_code, 200)
+        access = res.json()['access']
+        self.assertIn('refresh', res.json())
+        me = self.client.get('/api/auth/me/', HTTP_AUTHORIZATION=f'Bearer {access}')
+        self.assertEqual(me.json()['nickname'], '유림')
+
+    def test_login_fails_with_wrong_password(self):
+        self.signup()
+        self.assertEqual(self.login('wrong-password').status_code, 401)
+
+    def test_me_requires_login(self):
+        self.assertEqual(self.client.get('/api/auth/me/').status_code, 401)
+
+    def test_refresh_gives_new_access_token(self):
+        self.signup()
+        refresh = self.login().json()['refresh']
+        res = self.client.post('/api/auth/refresh/', {'refresh': refresh}, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('access', res.json())

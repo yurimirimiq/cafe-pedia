@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -137,3 +138,16 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:
 
 # 기본 User 대신 닉네임이 있는 사용자 모델 사용
 AUTH_USER_MODEL = 'api.User'
+
+# API 기본 설정: 요청 헤더의 JWT 토큰으로 로그인 사용자를 확인한다
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+# access 토큰은 짧게(유출돼도 피해가 작도록), refresh 토큰으로 새 access 토큰을 받는다
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+}
