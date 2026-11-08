@@ -1,0 +1,17 @@
+/* 디자인 방향(README)의 색을 변수로 정의 — 화면 어디서나 var(--brown) 처럼 쓴다 */
+:root {
+  --bg: #ffffff;
+  --ink: #2b211c;
+  --brown: #7a4a2b;
+  --crema: #c8a27c;
+  --latte: #efe6dc;
+  --mute: #8c7f77;
+  --line: #eee9e4;
+  font-family: 'Pretendard', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }

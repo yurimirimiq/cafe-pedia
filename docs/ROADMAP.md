@@ -29,21 +29,21 @@ cafe-pedia/
 
 ## 0단계: 준비 (1주차 초)
 
-- [ ] 개발 도구 설치: Python 3.12+, Node.js LTS, VS Code
+- [x] 개발 도구 설치: Python 3.12+, Node.js LTS, VS Code
 - [ ] [카카오 개발자](https://developers.kakao.com)에서 애플리케이션 등록
   - [ ] REST API 키 발급 (카페 검색용, 서버에서 사용)
   - [ ] JavaScript 키 발급 (지도 표시용, 브라우저에서 사용)
   - [ ] 플랫폼에 `http://localhost:5173` 등록
-- [ ] 기술 스택 최종 결정 → README의 "미정 사항" 업데이트
+- [x] 기술 스택 최종 결정 → README의 "미정 사항" 업데이트
 
 **완료 기준**: 키 두 개를 `.env`에 넣었고, 어떤 기술로 만들지 정했다.
 
 ## 1단계: 프로젝트 세팅 (1주차)
 
-- [ ] `backend/`: 가상환경(venv) 만들기, Django·DRF 설치, `requirements.txt` 작성
-- [ ] `frontend/`: Vite로 React 프로젝트 생성, Pretendard 글꼴과 색 변수(README 디자인 방향) 적용
-- [ ] 프론트에서 백엔드 API를 호출할 수 있게 CORS 설정 (`django-cors-headers`)
-- [ ] `.env`로 비밀값 관리 (`SECRET_KEY`, 카카오 키), `.env.example` 파일 커밋
+- [x] `backend/`: 가상환경(venv) 만들기, Django·DRF 설치, `requirements.txt` 작성
+- [x] `frontend/`: Vite로 React 프로젝트 생성, Pretendard 글꼴과 색 변수(README 디자인 방향) 적용
+- [x] 프론트에서 백엔드 API를 호출할 수 있게 CORS 설정 (`django-cors-headers`)
+- [x] `.env`로 비밀값 관리 (`SECRET_KEY`, 카카오 키), `.env.example` 파일 커밋
 
 **완료 기준**: 백엔드(`localhost:8000`)와 프론트(`localhost:5173`)가 둘 다 실행되고, 프론트 화면에 백엔드에서 받은 "hello"가 보인다.
 

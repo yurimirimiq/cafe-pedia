@@ -85,8 +85,32 @@
 
 웹으로 먼저 배포해 홍보하고, 반응이 좋으면 앱(PWA → React Native/Flutter)으로 확장을 검토한다. 앱에서 서버를 재사용할 수 있도록 백엔드는 API 형태로 만드는 것을 고려한다.
 
-## 미정 사항 (첫 세션에서 결정)
+## 기술 스택
 
-- 기술 스택 — 후보: **Django** (로그인·관리자 페이지·DB가 기본 내장이라 초심자에게 유리) 또는 FastAPI + 프론트엔드 분리
-- DB — 개발은 SQLite, 배포 시 PostgreSQL 검토
-- 배포 플랫폼 (Render, Railway, Fly.io 등)
+- 백엔드: Django 5.2 + Django REST Framework (`backend/`)
+- 프론트엔드: React + Vite (`frontend/`)
+- DB: 개발은 SQLite, 배포 시 PostgreSQL
+- 배포: 백엔드 Render, 프론트 Vercel (예정)
+
+## 로컬에서 실행하기
+
+필요한 것: Python 3.12+, Node.js 20+
+
+```bash
+# 백엔드 (http://localhost:8000)
+cd backend
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env   # DJANGO_SECRET_KEY 값을 채운다
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py runserver
+```
+
+```bash
+# 프론트엔드 (http://localhost:5173) — 새 터미널에서
+cd frontend
+npm install
+npm run dev
+```
+
+백엔드 테스트: `cd backend && .venv/bin/python manage.py test`

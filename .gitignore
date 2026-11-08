@@ -4,3 +4,6 @@
 # 파이썬
 __pycache__/
 .venv/
+
+# Django 개발용 DB
+db.sqlite3
