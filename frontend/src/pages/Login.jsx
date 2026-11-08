@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
+import KakaoButton from '../components/KakaoButton'
 import { Field } from './AuthForm'
 
 export default function Login() {
@@ -33,6 +34,8 @@ export default function Login() {
       <Field label="비밀번호" name="password" type="password" value={form.password} onChange={onChange} autoComplete="current-password" />
       {error && <p className="error" role="alert">{error}</p>}
       <button className="btn primary" disabled={busy}>{busy ? '로그인하는 중…' : '로그인'}</button>
+      <div className="divider"><span>또는</span></div>
+      <KakaoButton />
       <p className="muted">처음이세요? <Link to="/signup">회원가입</Link></p>
     </form>
   )

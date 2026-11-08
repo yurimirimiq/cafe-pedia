@@ -1,10 +1,17 @@
 """카카오 로컬 API 호출. 키가 브라우저에 노출되지 않도록 반드시 서버에서만 부른다."""
 
 import json
+import logging
 import os
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+AUTHORIZE_URL = 'https://kauth.kakao.com/oauth/authorize'
+TOKEN_URL = 'https://kauth.kakao.com/oauth/token'
+USER_URL = 'https://kapi.kakao.com/v2/user/me'
+
+logger = logging.getLogger(__name__)
 
 SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 # 카페피디아가 다루는 분류 (카카오 카테고리 그룹 코드)
@@ -63,3 +70,37 @@ def image_search(query):
     """다음(카카오) 이미지 검색에서 가장 정확한 결과 1개 → (썸네일 주소, 출처 글 주소) 또는 None"""
     documents = _get(IMAGE_URL, {'query': query, 'sort': 'accuracy', 'size': 1})
     return (documents[0]['thumbnail_url'], documents[0]['doc_url']) if documents else None
+
+
+def login_url(redirect_uri, state):
+    """카카오 로그인 화면 주소. client_id 는 REST API 키 (카카오 방식)"""
+    return f"{AUTHORIZE_URL}?{urlencode({'client_id': os.environ.get('KAKAO_REST_API_KEY', ''), 'redirect_uri': redirect_uri, 'response_type': 'code', 'state': state})}"
+
+
+def login_user(code, redirect_uri):
+    """카카오가 준 1회용 인가 코드 → 카카오 토큰 → 카카오 회원 정보 (회원 번호, 닉네임)"""
+    key = os.environ.get('KAKAO_REST_API_KEY')
+    if not key:
+        raise KakaoError('KAKAO_REST_API_KEY 가 .env 에 없어요.')
+    form = {'grant_type': 'authorization_code', 'client_id': key, 'redirect_uri': redirect_uri, 'code': code}
+    # 카카오 콘솔에서 Client Secret 을 켰다면 함께 보내야 한다
+    if secret := os.environ.get('KAKAO_CLIENT_SECRET'):
+        form['client_secret'] = secret
+    try:
+        with urlopen(Request(TOKEN_URL, data=urlencode(form).encode()), timeout=5) as res:
+            access = json.load(res)['access_token']
+        with urlopen(Request(USER_URL, headers={'Authorization': f'Bearer {access}'}), timeout=5) as res:
+            me = json.load(res)
+    except HTTPError as e:
+        # 카카오가 알려준 실패 이유(error_code, 설명)를 서버 로그에 남긴다. 키·코드 값은 남기지 않는다
+        try:
+            body = json.load(e)
+        except ValueError:
+            body = {}
+        reason = f"{e.code} {body.get('error_code', '')} {body.get('error', '')} {body.get('error_description', '')}".strip()
+        logger.warning('카카오 로그인 실패: %s', reason)
+        raise KakaoError(f'카카오 로그인 오류 {reason}') from e
+    except (URLError, TimeoutError) as e:
+        raise KakaoError('카카오에 연결하지 못했어요.') from e
+    nickname = me.get('kakao_account', {}).get('profile', {}).get('nickname') or me.get('properties', {}).get('nickname')
+    return str(me['id']), nickname

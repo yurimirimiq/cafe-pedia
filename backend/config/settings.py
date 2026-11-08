@@ -133,6 +133,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# 카카오 로그인 후 돌아올 프론트 주소 (카카오 콘솔의 Redirect URI 와 같아야 한다)
+KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI', 'http://localhost:5173/auth/kakao')
+
 # 프론트엔드(React) 주소에서 오는 API 요청을 허용한다
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
 

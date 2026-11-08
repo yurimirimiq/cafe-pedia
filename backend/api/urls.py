@@ -12,6 +12,8 @@ urlpatterns = [
     # access 토큰이 만료되면 refresh 토큰으로 새로 받는다
     path('auth/refresh/', TokenRefreshView.as_view(serializer_class=SafeTokenRefreshSerializer)),
     path('auth/me/', views.me),
+    path('auth/kakao/url/', views.kakao_login_url),
+    path('auth/kakao/', views.kakao_login),
     path('places/search/', views.search_places),
     path('places/nearby/', views.nearby_places),
     path('places/<int:place_id>/', views.place_detail),

@@ -485,3 +485,50 @@ class ThumbnailTest(APITestCase):
         res = self.client.get(f'/api/places/{self.place.id}/')
         self.assertEqual(res.status_code, 200)  # 사진 실패해도 상세는 보인다
         self.assertIsNone(Place.objects.get().thumbnail_checked_at)
+
+
+class KakaoLoginTest(APITestCase):
+    def login(self, code='abc'):
+        return self.client.post('/api/auth/kakao/', {'code': code}, format='json')
+
+    @patch('api.kakao.login_user', return_value=('12345', '유림'))
+    def test_first_login_creates_user_and_returns_tokens(self, mock):
+        res = self.login()
+        self.assertEqual(res.status_code, 200)
+        user = User.objects.get(kakao_id='12345')
+        self.assertEqual(user.nickname, '유림')
+        self.assertFalse(user.has_usable_password())  # 비밀번호 로그인 불가
+        me = self.client.get('/api/auth/me/', HTTP_AUTHORIZATION=f"Bearer {res.json()['access']}")
+        self.assertEqual(me.json()['nickname'], '유림')
+
+    @patch('api.kakao.login_user', return_value=('12345', '유림'))
+    def test_second_login_reuses_same_user(self, mock):
+        self.login()
+        self.login()
+        self.assertEqual(User.objects.filter(kakao_id='12345').count(), 1)
+
+    @patch('api.kakao.login_user', return_value=('999', '유림'))
+    def test_duplicate_nickname_gets_number(self, mock):
+        User.objects.create_user(username='yurim', password='x', nickname='유림')
+        self.login()
+        self.assertEqual(User.objects.get(kakao_id='999').nickname, '유림2')
+
+    @patch('api.kakao.login_user', return_value=('777', None))
+    def test_missing_nickname(self, mock):
+        self.login()
+        self.assertEqual(User.objects.get(kakao_id='777').nickname, '카카오 사용자')
+
+    @patch('api.kakao.login_user', side_effect=kakao.KakaoError('bad code'))
+    def test_kakao_failure(self, mock):
+        self.assertEqual(self.login().status_code, 401)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_missing_code(self):
+        self.assertEqual(self.client.post('/api/auth/kakao/', {}, format='json').status_code, 400)
+
+    def test_login_url_requires_state_and_uses_redirect(self):
+        self.assertEqual(self.client.get('/api/auth/kakao/url/').status_code, 400)
+        url = self.client.get('/api/auth/kakao/url/', {'state': 'x' * 32}).json()['url']
+        self.assertTrue(url.startswith('https://kauth.kakao.com/oauth/authorize?'))
+        self.assertIn('redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fkakao', url)
+        self.assertIn('state=' + 'x' * 32, url)

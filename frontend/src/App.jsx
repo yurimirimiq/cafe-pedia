@@ -2,6 +2,7 @@ import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from 'react-rou
 import { AuthProvider, useAuth } from './auth'
 import Calendar from './pages/Calendar'
 import Home from './pages/Home'
+import KakaoCallback from './pages/KakaoCallback'
 import Login from './pages/Login'
 import Me from './pages/Me'
 import Nearby from './pages/Nearby'
@@ -55,6 +56,7 @@ function Layout() {
           <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
           <Route path="/me" element={<RequireAuth><Me /></RequireAuth>} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/auth/kakao" element={<KakaoCallback />} />
           <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
         </Routes>
       </main>

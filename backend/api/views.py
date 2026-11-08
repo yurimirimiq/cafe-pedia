@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
+from django.conf import settings
 from django.db.models import Avg, Count, Max, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -9,9 +10,10 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import kakao
-from .models import TAG_OPTIONS, Place, Review, Wishlist
+from .models import TAG_OPTIONS, Place, Review, User, Wishlist
 from .serializers import (
     MyReviewSerializer,
     PlaceSerializer,
@@ -295,3 +297,48 @@ def my_summary(request):
         'recent': [place_with_my_rating(r) for r in reviews.order_by('-updated_at')[:12]],
         'wishlist': PlaceSerializer(wished[:12], many=True).data,
     })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def kakao_login_url(request):
+    """카카오 로그인 화면 주소. state 는 프론트가 만든 임의 값 (돌아왔을 때 같은지 확인해 위조 요청을 막는다)"""
+    state = request.query_params.get('state', '')
+    if not 16 <= len(state) <= 64:
+        return Response({'detail': 'state 가 필요해요.'}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'url': kakao.login_url(settings.KAKAO_REDIRECT_URI, state)})
+
+
+def unique_nickname(base):
+    """닉네임이 이미 있으면 뒤에 숫자를 붙인다: 유림 → 유림2 → 유림3"""
+    base = (base or '카카오 사용자')[:17]
+    nickname, n = base, 1
+    while User.objects.filter(nickname=nickname).exists():
+        n += 1
+        nickname = f'{base}{n}'
+    return nickname
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([AnonRateThrottle])
+def kakao_login(request):
+    """카카오 로그인: {code} → 우리 회원 찾기(없으면 만들기) → 우리 JWT (access / refresh)"""
+    code = request.data.get('code')
+    if not code:
+        return Response({'detail': '인가 코드가 없어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        kakao_id, nickname = kakao.login_user(code, settings.KAKAO_REDIRECT_URI)
+    except kakao.KakaoError:
+        return Response({'detail': '카카오 로그인에 실패했어요. 다시 시도해 주세요.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    user = User.objects.filter(kakao_id=kakao_id).first()
+    if user is None:
+        user = User(username=f'kakao_{kakao_id}', kakao_id=kakao_id, nickname=unique_nickname(nickname))
+        user.set_unusable_password()  # 카카오로만 로그인하는 회원 (비밀번호 로그인 불가)
+        user.save()
+    if not user.is_active:
+        return Response({'detail': '사용할 수 없는 계정이에요.'}, status=status.HTTP_403_FORBIDDEN)
+
+    refresh = RefreshToken.for_user(user)
+    return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})

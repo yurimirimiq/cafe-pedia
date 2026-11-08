@@ -22,6 +22,12 @@ export function AuthProvider({ children }) {
     setUser(await apiFetch('/api/auth/me/'))
   }
 
+  // 카카오 로그인처럼 서버가 토큰을 바로 준 경우
+  async function loginWithTokens(newTokens) {
+    tokens.save(newTokens)
+    setUser(await apiFetch('/api/auth/me/'))
+  }
+
   async function signup(form) {
     await apiFetch('/api/auth/signup/', { method: 'POST', body: form })
     await login(form.username, form.password)
@@ -32,7 +38,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  return <AuthContext.Provider value={{ user, ready, login, signup, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, ready, login, loginWithTokens, signup, logout }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)

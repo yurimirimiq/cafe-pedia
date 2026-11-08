@@ -11,6 +11,8 @@ class User(AbstractUser):
     """기본 사용자 + 닉네임. 프로젝트 시작 시 만들어 두지 않으면 나중에 바꾸기 매우 어렵다."""
 
     nickname = models.CharField('닉네임', max_length=20, unique=True)
+    # 카카오로 가입한 사람의 카카오 회원 번호 (아이디·비밀번호 가입자는 비어 있음)
+    kakao_id = models.CharField('카카오 회원 번호', max_length=30, unique=True, null=True, blank=True)
 
     # createsuperuser 할 때 닉네임도 묻도록
     REQUIRED_FIELDS = ['email', 'nickname']
