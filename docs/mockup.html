@@ -5,99 +5,243 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>카페피디아 시안</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
 <style>
-:root{--ink:#2B211C;--brown:#7A4A2B;--crema:#C8A27C;--latte:#EFE6DC;--mute:#8C7F77;--line:#EEE9E4}
+:root{--ink:#2B211C;--brown:#7A4A2B;--crema:#C8A27C;--latte:#EFE6DC;--mute:#8C7F77;--line:#EEE9E4;--soft:#F7F4F1}
 *{box-sizing:border-box}
-body{margin:0;padding:32px;background:#F7F4F1;font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.01em}
+body{margin:0;padding:32px;background:var(--soft);font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.01em}
 .cap{font-size:14px;color:var(--mute);margin:0 0 8px}
-.win{background:#fff;border:1px solid #E2DBD4;border-radius:14px;overflow:hidden;margin-bottom:28px;max-width:1200px}
-.chrome{display:flex;gap:6px;align-items:center;padding:10px 14px;background:#F7F4F1;border-bottom:1px solid var(--line)}
+.win{background:#fff;border:1px solid #E2DBD4;border-radius:14px;overflow:hidden;margin-bottom:28px;width:1200px}
+.chrome{display:flex;gap:6px;align-items:center;padding:10px 14px;background:var(--soft);border-bottom:1px solid var(--line)}
 .chrome i{width:11px;height:11px;border-radius:50%;background:#DDD5CE}
 .url{margin-left:14px;font-size:13px;color:var(--mute);background:#fff;border-radius:6px;padding:3px 14px}
-.nav{display:flex;align-items:center;gap:28px;padding:18px 40px;border-bottom:1px solid var(--line);font-size:15px}
-.logo{font-size:22px;font-weight:700;color:var(--brown);letter-spacing:-0.03em}
-.on{font-weight:600}.off{color:var(--mute)}
-.srch{margin-left:auto;background:#F5F1ED;border-radius:8px;padding:8px 14px;width:300px;color:var(--mute);font-size:14px}
-.btn{display:inline-block;padding:9px 18px;border-radius:8px;background:var(--latte);color:var(--brown);font-size:14px;font-weight:500}
-.btn.solid{background:var(--brown);color:#fff}
-.pg{padding:24px 40px 32px}
-.sec{font-size:18px;font-weight:600;margin:4px 0 14px}
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:16px;margin-bottom:28px}
-.pt{aspect-ratio:3/4;border-radius:8px;display:flex;align-items:flex-end;padding:12px;font-size:30px;font-weight:600}
+.nav{display:flex;align-items:center;gap:30px;padding:16px 40px;border-bottom:1px solid var(--line);font-size:15px}
+.logo{font-size:22px;font-weight:700;color:var(--brown);letter-spacing:-0.03em;margin-right:12px}
+.nav .m{color:var(--mute);display:flex;align-items:center;gap:6px}
+.nav .m.on{color:var(--ink);font-weight:600}
+.nav .r{margin-left:auto;display:flex;align-items:center;gap:18px;color:var(--mute);font-size:20px}
+.ava{width:30px;height:30px;border-radius:50%;background:var(--latte);color:var(--brown);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.pg{padding:26px 40px 34px}
+.sec{font-size:18px;font-weight:600;margin:0 0 14px;display:flex;align-items:baseline;justify-content:space-between}
+.sec small{font-size:13px;font-weight:400;color:var(--mute)}
+.tabs{display:flex;gap:22px;font-size:26px;font-weight:700;letter-spacing:-0.03em;color:#CFC6BE;margin-bottom:22px}
+.tabs .on{color:var(--ink)}
+.chips{display:flex;gap:8px}
+.chip{padding:7px 16px;border-radius:999px;border:1px solid var(--line);font-size:14px;color:var(--mute)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:16px}
+.pt{aspect-ratio:3/4;border-radius:8px;display:flex;align-items:flex-end;padding:12px;font-size:28px;font-weight:600;position:relative}
+.rank{position:absolute;left:10px;top:8px;font-size:22px;font-weight:700}
+.tag{position:absolute;right:8px;top:8px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.85);color:var(--brown)}
 .pn{font-size:15px;margin-top:8px}
 .pm{font-size:13px;color:var(--mute)}
 .pr{font-size:13px;color:var(--brown);font-weight:500}
 .d1{background:#3B2A21;color:#EFE6DC}.d2{background:#C8A27C;color:#3B2A21}.d3{background:#EFE6DC;color:#7A4A2B}.d4{background:#7A4A2B;color:#EFE6DC}
-.detail{display:grid;grid-template-columns:200px 1fr 300px;gap:36px;align-items:start;padding:36px 40px 24px}
-.stars{font-size:36px;color:var(--line);letter-spacing:2px}.stars b{color:var(--brown);font-weight:400}
-.map{height:170px;border-radius:8px;background:#F5F1ED;display:flex;align-items:center;justify-content:center;color:var(--mute)}
-.cms{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.cm{border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px}
-.cm .h{display:flex;justify-content:space-between;font-weight:600}
-.cm p{margin:6px 0 0;color:#5C514A}
+.btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:9px 18px;border-radius:8px;background:var(--latte);color:var(--brown);font-size:14px;font-weight:500}
 </style>
 </head>
 <body>
+
+<!-- 1. 홈 -->
 <p class="cap">홈</p>
 <div class="win">
   <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr</span></div>
-  <div class="nav"><span class="logo">cafepedia</span><span class="on">홈</span><span class="off">랭킹</span><span class="off">동네별</span><span class="srch">카페, 동네 검색</span><span class="off">로그인</span><span class="btn solid">회원가입</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="m on">홈</span><span class="m">검색</span><span class="m">캘린더</span><span class="m">나의 기록</span><span class="r"><span class="ti ti-bell"></span><span class="ava">유</span></span></div>
   <div class="pg">
-    <p class="sec">망원동에서 평가가 높은 카페</p>
-    <div class="grid">
-      <div><div class="pt d1">온</div><div class="pn">카페 온기</div><div class="pm">망원동</div><div class="pr">평균 ★4.6</div></div>
-      <div><div class="pt d2">오</div><div class="pn">오후세시 베이크</div><div class="pm">망원동</div><div class="pr">평균 ★4.4</div></div>
-      <div><div class="pt d3">책</div><div class="pn">책방 커피</div><div class="pm">망원동</div><div class="pr">평균 ★4.4</div></div>
-      <div><div class="pt d4">숲</div><div class="pn">숲속 로스터스</div><div class="pm">망원동</div><div class="pr">평균 ★4.3</div></div>
-      <div><div class="pt d1" style="color:#C8A27C">달</div><div class="pn">달빛 카페</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
-      <div><div class="pt d2" style="color:#fff">브</div><div class="pn">스터디 브루</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
-      <div><div class="pt d3" style="color:#3B2A21">골</div><div class="pn">골목 커피</div><div class="pm">망원동</div><div class="pr">평균 ★4.1</div></div>
+    <div class="tabs"><span class="on">홈</span><span>카페</span><span>식당</span></div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:30px">
+      <div style="background:#3B2A21;border-radius:12px;padding:28px 30px;color:#EFE6DC;display:flex;flex-direction:column;justify-content:flex-end;min-height:190px">
+        <div style="font-size:13px;color:var(--crema);margin-bottom:6px">이번 주 가장 많이 평가된 곳</div>
+        <div style="font-size:30px;font-weight:700;letter-spacing:-0.03em">망원동 카페 온기</div>
+        <div style="font-size:15px;margin-top:6px;color:#D8CBBE">평균 ★4.6, 이번 주 평가 32개</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1">
+          <div style="background:var(--soft);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:14px"><span class="ti ti-star" style="font-size:28px;color:var(--brown)"></span>평가하기</div>
+          <div style="background:var(--soft);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:14px"><span class="ti ti-chart-bar" style="font-size:28px;color:var(--brown)"></span>취향 분석</div>
+          <div style="background:var(--soft);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:14px"><span class="ti ti-trophy" style="font-size:28px;color:var(--brown)"></span>랭킹</div>
+        </div>
+        <div style="background:var(--soft);border-radius:999px;padding:10px 18px;text-align:center;font-size:14px;color:var(--mute)">지금까지 <b style="color:var(--brown);font-weight:600">★ 12,480개</b>의 평가가 쌓였어요</div>
+      </div>
     </div>
-    <p class="sec">작업하기 좋은 카페</p>
-    <div class="grid" style="margin-bottom:0">
-      <div><div class="pt d3">창</div><div class="pn">창가의 오후</div><div class="pm">연남동</div><div class="pr">평균 ★4.5</div></div>
-      <div><div class="pt d1">모</div><div class="pn">모퉁이 커피</div><div class="pm">합정동</div><div class="pr">평균 ★4.3</div></div>
-      <div><div class="pt d4">집</div><div class="pn">작업실 카페</div><div class="pm">서교동</div><div class="pr">평균 ★4.3</div></div>
-      <div><div class="pt d2">빛</div><div class="pn">빛과 커피</div><div class="pm">연남동</div><div class="pr">평균 ★4.1</div></div>
-      <div><div class="pt d3" style="color:#3B2A21">조</div><div class="pn">조용한 오후</div><div class="pm">망원동</div><div class="pr">평균 ★4.0</div></div>
-      <div><div class="pt d1" style="color:#C8A27C">밤</div><div class="pn">밤의 서재</div><div class="pm">합정동</div><div class="pr">평균 ★4.0</div></div>
-      <div><div class="pt d4">결</div><div class="pn">결 커피랩</div><div class="pm">서교동</div><div class="pr">평균 ★3.9</div></div>
+    <p class="sec">카페피디아 인기 랭킹 <small>전체 보기</small></p>
+    <div class="grid" style="margin-bottom:30px">
+      <div><div class="pt d1"><span class="rank">1</span><span class="tag">카페</span>온</div><div class="pn">카페 온기</div><div class="pm">망원동</div><div class="pr">평균 ★4.6</div></div>
+      <div><div class="pt d4"><span class="rank">2</span><span class="tag">식당</span>국</div><div class="pn">망원 국밥집</div><div class="pm">망원동</div><div class="pr">평균 ★4.5</div></div>
+      <div><div class="pt d2"><span class="rank">3</span><span class="tag">카페</span>오</div><div class="pn">오후세시 베이크</div><div class="pm">망원동</div><div class="pr">평균 ★4.4</div></div>
+      <div><div class="pt d3"><span class="rank">4</span><span class="tag">식당</span>파</div><div class="pn">골목 파스타</div><div class="pm">연남동</div><div class="pr">평균 ★4.4</div></div>
+      <div><div class="pt d1" style="color:#C8A27C"><span class="rank">5</span><span class="tag">카페</span>책</div><div class="pn">책방 커피</div><div class="pm">합정동</div><div class="pr">평균 ★4.3</div></div>
+      <div><div class="pt d2" style="color:#fff"><span class="rank">6</span><span class="tag">식당</span>우</div><div class="pn">우동 한 그릇</div><div class="pm">서교동</div><div class="pr">평균 ★4.3</div></div>
+      <div><div class="pt d4"><span class="rank">7</span><span class="tag">카페</span>숲</div><div class="pn">숲속 로스터스</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
+    </div>
+    <p class="sec">밥 먹고 카페까지, 망원동 <small>전체 보기</small></p>
+    <div class="grid">
+      <div><div class="pt d3"><span class="tag">식당</span>칼</div><div class="pn">망원 칼국수</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
+      <div><div class="pt d1"><span class="tag">카페</span>달</div><div class="pn">달빛 카페</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
+      <div><div class="pt d2"><span class="tag">식당</span>타</div><div class="pn">망원 타코</div><div class="pm">망원동</div><div class="pr">평균 ★4.1</div></div>
+      <div><div class="pt d4"><span class="tag">카페</span>골</div><div class="pn">골목 커피</div><div class="pm">망원동</div><div class="pr">평균 ★4.1</div></div>
+      <div><div class="pt d3" style="color:#3B2A21"><span class="tag">식당</span>돈</div><div class="pn">돈가스 상회</div><div class="pm">망원동</div><div class="pr">평균 ★4.0</div></div>
+      <div><div class="pt d1" style="color:#C8A27C"><span class="tag">카페</span>조</div><div class="pn">조용한 오후</div><div class="pm">망원동</div><div class="pr">평균 ★4.0</div></div>
+      <div><div class="pt d2"><span class="tag">카페</span>브</div><div class="pn">스터디 브루</div><div class="pm">망원동</div><div class="pr">평균 ★3.9</div></div>
     </div>
   </div>
 </div>
 
-<p class="cap">카페 상세</p>
+<!-- 2. 검색 -->
+<p class="cap">검색</p>
 <div class="win">
-  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr/cafe/onki</span></div>
-  <div class="nav"><span class="logo">cafepedia</span><span class="off">홈</span><span class="off">랭킹</span><span class="off">동네별</span><span class="srch">카페, 동네 검색</span><span class="off">내 기록</span></div>
-  <div class="detail">
+  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr/search</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="m">홈</span><span class="m on">검색</span><span class="m">캘린더</span><span class="m">나의 기록</span><span class="r"><span class="ti ti-bell"></span><span class="ava">유</span></span></div>
+  <div class="pg">
+    <div style="display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:10px;padding:14px 18px;font-size:17px;color:var(--mute);margin-bottom:30px"><span class="ti ti-search" style="font-size:22px"></span>카페, 식당, 동네 검색</div>
+    <p class="sec">최근 본 장소 <small>모두 삭제</small></p>
+    <div class="grid" style="grid-template-columns:repeat(8,1fr);margin-bottom:30px">
+      <div><div class="pt d1" style="font-size:22px">온</div><div class="pn" style="font-size:13px">카페 온기</div></div>
+      <div><div class="pt d4" style="font-size:22px">국</div><div class="pn" style="font-size:13px">망원 국밥집</div></div>
+      <div><div class="pt d3" style="font-size:22px">파</div><div class="pn" style="font-size:13px">골목 파스타</div></div>
+      <div><div class="pt d2" style="font-size:22px">오</div><div class="pn" style="font-size:13px">오후세시 베이크</div></div>
+      <div><div class="pt d1" style="font-size:22px;color:#C8A27C">책</div><div class="pn" style="font-size:13px">책방 커피</div></div>
+      <div><div class="pt d3" style="font-size:22px;color:#3B2A21">칼</div><div class="pn" style="font-size:13px">망원 칼국수</div></div>
+      <div><div class="pt d4" style="font-size:22px">숲</div><div class="pn" style="font-size:13px">숲속 로스터스</div></div>
+      <div><div class="pt d2" style="font-size:22px;color:#fff">우</div><div class="pn" style="font-size:13px">우동 한 그릇</div></div>
+    </div>
+    <p class="sec" style="margin-bottom:4px">유림님이 좋아할 만한 곳 <small>더보기</small></p>
+    <p class="pm" style="margin:0 0 14px;font-size:14px">디저트 카페를 높게 평가하셨네요.</p>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr)">
+      <div style="display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px"><div class="pt d2" style="width:64px;font-size:20px;padding:8px">케</div><div><div style="font-size:15px">케이크 공방</div><div class="pm">카페, 연남동</div><div class="pr">예상 ★4.5</div></div></div>
+      <div style="display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px"><div class="pt d1" style="width:64px;font-size:20px;padding:8px">구</div><div><div style="font-size:15px">구움과자점</div><div class="pm">카페, 합정동</div><div class="pr">예상 ★4.4</div></div></div>
+      <div style="display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px"><div class="pt d3" style="width:64px;font-size:20px;padding:8px">브</div><div><div style="font-size:15px">브런치 하우스</div><div class="pm">식당, 망원동</div><div class="pr">예상 ★4.2</div></div></div>
+      <div style="display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:12px"><div class="pt d4" style="width:64px;font-size:20px;padding:8px">빵</div><div><div style="font-size:15px">아침 빵집</div><div class="pm">카페, 서교동</div><div class="pr">예상 ★4.2</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 장소 상세 -->
+<p class="cap">장소 상세</p>
+<div class="win">
+  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr/place/onki</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="m">홈</span><span class="m">검색</span><span class="m">캘린더</span><span class="m">나의 기록</span><span class="r"><span class="ti ti-bell"></span><span class="ava">유</span></span></div>
+  <div style="display:grid;grid-template-columns:200px minmax(0,1fr) 260px;gap:28px;align-items:start;padding:34px 40px 22px">
     <div class="pt d1" style="font-size:56px;padding:18px">온</div>
     <div>
       <div style="font-size:34px;font-weight:700;letter-spacing:-0.03em">카페 온기</div>
-      <div class="pm" style="font-size:15px;margin-top:4px">카페 / 서울 마포구 망원동</div>
+      <div class="pm" style="font-size:15px;margin-top:4px">카페, 디저트 / 서울 마포구 망원동</div>
       <div style="display:flex;align-items:baseline;gap:12px;margin:22px 0 18px;padding-bottom:18px;border-bottom:1px solid var(--line)">
         <span style="font-size:52px;font-weight:700;color:var(--brown);line-height:1;letter-spacing:-0.03em">4.6</span>
         <span class="pm" style="font-size:15px">128명이 평가했어요</span>
       </div>
-      <div style="display:flex;align-items:center;gap:20px">
-        <div><div class="pr" style="font-size:14px">4.0점, 좋아요</div><div class="stars"><b>★★★★</b>★</div></div>
-        <span class="btn">가고 싶어요</span>
-        <span class="btn">한 줄 평 쓰기</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div><div class="pr" style="font-size:14px">4.0점, 좋아요</div><div style="font-size:32px;color:var(--line);letter-spacing:1px;line-height:1.1"><span style="color:var(--brown)">★★★★</span>★</div></div>
+        <span class="btn"><span class="ti ti-calendar"></span>11월 7일 방문</span>
+        <span class="btn"><span class="ti ti-bookmark"></span>가고 싶어요</span>
+        <span class="btn"><span class="ti ti-pencil"></span>한 줄 평</span>
       </div>
     </div>
     <div>
-      <div class="map">지도</div>
+      <div style="height:170px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--mute);gap:6px"><span class="ti ti-map-pin"></span>지도</div>
       <div style="font-size:14px;color:#5C514A;margin-top:12px;line-height:1.8">매일 11:00 – 22:00<br>콘센트 있음, 주차 불가</div>
     </div>
   </div>
-  <div class="pg" style="padding-top:8px">
-    <div style="display:flex;justify-content:space-between;align-items:baseline"><p class="sec">한 줄 평 <span class="pm" style="font-weight:400;font-size:15px">42</span></p><span class="pm">더보기</span></div>
-    <div class="cms">
-      <div class="cm"><div class="h"><span>민지</span><span class="pr">★5.0</span></div><p>디저트 때문에 또 갈 것 같아요</p></div>
-      <div class="cm"><div class="h"><span>카공러</span><span class="pr">★4.0</span></div><p>콘센트 많고 조용해요</p></div>
-      <div class="cm"><div class="h"><span>망원주민</span><span class="pr">★4.5</span></div><p>라떼가 진하고 창가 자리가 좋아요</p></div>
+  <div class="pg" style="padding-top:6px">
+    <p class="sec">한 줄 평 <small>더보기</small></p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div style="border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px"><div style="display:flex;justify-content:space-between;font-weight:600"><span>민지</span><span class="pr">★5.0</span></div><p style="margin:6px 0 0;color:#5C514A">디저트 때문에 또 갈 것 같아요</p></div>
+      <div style="border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px"><div style="display:flex;justify-content:space-between;font-weight:600"><span>카공러</span><span class="pr">★4.0</span></div><p style="margin:6px 0 0;color:#5C514A">콘센트 많고 조용해요</p></div>
+      <div style="border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px"><div style="display:flex;justify-content:space-between;font-weight:600"><span>망원주민</span><span class="pr">★4.5</span></div><p style="margin:6px 0 0;color:#5C514A">라떼가 진하고 창가 자리가 좋아요</p></div>
     </div>
   </div>
 </div>
+
+<!-- 4. 캘린더 -->
+<p class="cap">캘린더</p>
+<div class="win">
+  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr/calendar</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="m">홈</span><span class="m">검색</span><span class="m on">캘린더</span><span class="m">나의 기록</span><span class="r"><span class="ti ti-bell"></span><span class="ava">유</span></span></div>
+  <div class="pg">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:16px;font-size:24px;font-weight:700"><span class="ti ti-chevron-left" style="color:var(--mute)"></span>2026년 11월<span class="ti ti-chevron-right" style="color:var(--mute)"></span></div>
+      <div class="chips"><span class="chip on">전체</span><span class="chip">카페</span><span class="chip">식당</span></div>
+      <div style="display:flex;align-items:center;gap:14px"><span class="pm" style="font-size:14px">이번 달 카페 5곳, 식당 3곳</span><span class="btn" style="background:var(--brown);color:#fff"><span class="ti ti-plus"></span>기록 추가</span></div>
+    </div>
+    <div id="cal" style="display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line)"></div>
+  </div>
+</div>
+
+<!-- 5. 나의 기록 -->
+<p class="cap">나의 기록</p>
+<div class="win">
+  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr/me</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="m">홈</span><span class="m">검색</span><span class="m">캘린더</span><span class="m on">나의 기록</span><span class="r"><span class="ti ti-bell"></span><span class="ti ti-settings"></span></span></div>
+  <div class="pg" style="display:grid;grid-template-columns:330px 1fr;gap:40px">
+    <div>
+      <div style="width:96px;height:96px;border-radius:50%;background:var(--latte);color:var(--brown);font-size:40px;font-weight:700;display:flex;align-items:center;justify-content:center">유</div>
+      <div style="font-size:26px;font-weight:700;margin-top:16px;letter-spacing:-0.03em">유림</div>
+      <div class="pm" style="font-size:14px;margin-top:4px">밥 먹고 카페 가는 사람</div>
+      <div style="display:flex;gap:8px;margin-top:18px"><span class="btn" style="flex:1;justify-content:center;background:#fff;border:1px solid var(--line);color:var(--ink)">프로필 수정</span><span class="btn" style="flex:1;justify-content:center;background:#fff;border:1px solid var(--line);color:var(--ink)">프로필 공유</span></div>
+      <div style="display:flex;margin-top:24px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center">
+        <div style="flex:1"><div style="font-size:24px;font-weight:700">48</div><div class="pm">평가</div></div>
+        <div style="flex:1;border-left:1px solid var(--line);border-right:1px solid var(--line)"><div style="font-size:24px;font-weight:700">21</div><div class="pm">한 줄 평</div></div>
+        <div style="flex:1"><div style="font-size:24px;font-weight:700">13</div><div class="pm">가고 싶어요</div></div>
+      </div>
+      <p class="sec" style="margin-top:24px">별점 분포 <small>가장 많이 준 별점 4.0</small></p>
+      <div style="display:flex;align-items:flex-end;gap:5px;height:80px">
+        <div style="flex:1;height:5%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:8%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:12%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:20%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:38%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:56%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:100%;background:var(--brown);border-radius:3px 3px 0 0"></div><div style="flex:1;height:70%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:34%;background:var(--latte);border-radius:3px 3px 0 0"></div><div style="flex:1;height:18%;background:var(--latte);border-radius:3px 3px 0 0"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between" class="pm"><span>0.5</span><span>5.0</span></div>
+    </div>
+    <div>
+      <p class="sec">보관함</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px">
+        <div style="background:var(--soft);border-radius:12px;padding:20px;display:flex;align-items:center;gap:14px"><span class="ti ti-coffee" style="font-size:30px;color:var(--brown)"></span><div><div style="font-size:16px;font-weight:600">카페</div><div class="pm">31곳 평가</div></div></div>
+        <div style="background:var(--soft);border-radius:12px;padding:20px;display:flex;align-items:center;gap:14px"><span class="ti ti-tools-kitchen-2" style="font-size:30px;color:var(--brown)"></span><div><div style="font-size:16px;font-weight:600">식당</div><div class="pm">17곳 평가</div></div></div>
+        <div style="background:var(--soft);border-radius:12px;padding:20px;display:flex;align-items:center;gap:14px"><span class="ti ti-bookmark" style="font-size:30px;color:var(--brown)"></span><div><div style="font-size:16px;font-weight:600">가고 싶어요</div><div class="pm">13곳</div></div></div>
+      </div>
+      <p class="sec">최근 평가한 곳 <small>전체 보기</small></p>
+      <div class="grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:30px">
+        <div><div class="pt d1" style="font-size:22px">온</div><div class="pn" style="font-size:13px">카페 온기</div><div class="pr">★4.0</div></div>
+        <div><div class="pt d4" style="font-size:22px">국</div><div class="pn" style="font-size:13px">망원 국밥집</div><div class="pr">★4.5</div></div>
+        <div><div class="pt d2" style="font-size:22px">오</div><div class="pn" style="font-size:13px">오후세시 베이크</div><div class="pr">★5.0</div></div>
+        <div><div class="pt d3" style="font-size:22px">파</div><div class="pn" style="font-size:13px">골목 파스타</div><div class="pr">★3.5</div></div>
+        <div><div class="pt d1" style="font-size:22px;color:#C8A27C">책</div><div class="pn" style="font-size:13px">책방 커피</div><div class="pr">★4.0</div></div>
+        <div><div class="pt d3" style="font-size:22px;color:#3B2A21">칼</div><div class="pn" style="font-size:13px">망원 칼국수</div><div class="pr">★4.0</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. 모바일 폭: 하단 탭 바 -->
+<p class="cap">모바일 폭에서는 메뉴가 하단 탭 바로 바뀐다</p>
+<div style="width:340px;background:#fff;border:1px solid #E2DBD4;border-radius:28px;padding:22px 18px 12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><span class="logo" style="font-size:18px">cafepedia</span><span class="ti ti-bell" style="font-size:20px;color:var(--mute)"></span></div>
+  <div class="tabs" style="font-size:22px;gap:16px;margin-bottom:14px"><span class="on">홈</span><span>카페</span><span>식당</span></div>
+  <div style="background:#3B2A21;border-radius:10px;padding:16px;color:#EFE6DC;height:120px;display:flex;flex-direction:column;justify-content:flex-end"><div style="font-size:11px;color:var(--crema)">이번 주 가장 많이 평가된 곳</div><div style="font-size:18px;font-weight:700">망원동 카페 온기</div></div>
+  <p class="sec" style="font-size:15px;margin:16px 0 10px">카페피디아 인기 랭킹</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <div><div class="pt d1" style="font-size:18px;padding:8px"><span class="rank" style="font-size:16px">1</span>온</div><div class="pn" style="font-size:12px">카페 온기</div></div>
+    <div><div class="pt d4" style="font-size:18px;padding:8px"><span class="rank" style="font-size:16px">2</span>국</div><div class="pn" style="font-size:12px">망원 국밥집</div></div>
+    <div><div class="pt d2" style="font-size:18px;padding:8px"><span class="rank" style="font-size:16px">3</span>오</div><div class="pn" style="font-size:12px">오후세시 베이크</div></div>
+  </div>
+  <div style="display:flex;justify-content:space-around;border-top:1px solid var(--line);margin-top:16px;padding-top:10px;font-size:11px;color:var(--mute);text-align:center">
+    <div style="color:var(--ink);font-weight:600"><div class="ti ti-home" style="font-size:22px"></div>홈</div>
+    <div><div class="ti ti-search" style="font-size:22px"></div>검색</div>
+    <div><div class="ti ti-calendar" style="font-size:22px"></div>캘린더</div>
+    <div><div class="ti ti-user" style="font-size:22px"></div>나의 기록</div>
+  </div>
+</div>
+
+<script>
+// 2026년 11월: 1일이 일요일. 방문 기록이 있는 날에만 포스터를 그린다
+const visits = {1:['d2','오'],5:['d4','국'],7:['d1','온'],8:['d3','파'],12:['d1','책'],15:['d3','칼'],19:['d4','숲'],22:['d2','우']}
+const cal = document.getElementById('cal')
+'일월화수목금토'.split('').forEach(d => cal.insertAdjacentHTML('beforeend', `<div style="text-align:center;padding:12px 0;font-size:14px;color:var(--mute)">${d}</div>`))
+for (let day = 1; day <= 30; day++) {
+  const v = visits[day]
+  const num = `<div style="font-size:14px;${day === 8 ? 'color:var(--brown);font-weight:700' : 'color:var(--mute)'}">${day}</div>`
+  const poster = v ? `<div class="pt ${v[0]}" style="width:62px;font-size:20px;padding:8px;margin-top:4px">${v[1]}</div>` : ''
+  cal.insertAdjacentHTML('beforeend', `<div style="height:126px;border-bottom:1px solid var(--line);padding:8px;display:flex;flex-direction:column;align-items:center">${num}${poster}</div>`)
+}
+// 마지막 주의 빈칸을 채워 달력 아래 선을 끝까지 잇는다
+for (let i = 0; i < 5; i++) cal.insertAdjacentHTML('beforeend', '<div style="height:126px;border-bottom:1px solid var(--line)"></div>')
+</script>
 </body>
 </html>

@@ -134,3 +134,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 프론트엔드(React) 주소에서 오는 API 요청을 허용한다
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+
+# 기본 User 대신 닉네임이 있는 사용자 모델 사용
+AUTH_USER_MODEL = 'api.User'
