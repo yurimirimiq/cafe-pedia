@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Avg, Count, Max, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -218,6 +219,33 @@ def category_filter(request):
     return {'category': category} if category in kakao.ALLOWED_CATEGORIES else {}
 
 
+# 홈의 "요즘 뜨는 동네" 줄 (우리 별점이 쌓이기 전에도 홈이 비어 보이지 않도록)
+TRENDING_AREAS = ['성수동', '망원동', '연남동', '익선동']
+AREA_CACHE_SECONDS = 6 * 60 * 60  # 카카오 호출을 아끼려고 동네별 결과를 6시간 저장
+
+
+def trending_areas(category):
+    """동네별 카카오 검색 상위 장소. 카카오가 실패한 동네는 건너뛴다"""
+    code = category or 'CE7'  # 홈(전체) 탭에서는 카페
+    word = '맛집' if code == 'FD6' else '카페'
+    areas = []
+    for area in TRENDING_AREAS:
+        key = f'trending:{area}:{code}'
+        kakao_ids = cache.get(key)
+        if kakao_ids is None:
+            try:
+                kakao_ids = [p.kakao_id for p in save_places(kakao.search_places(f'{area} {word}', code)[:10])]
+            except kakao.KakaoError:
+                continue
+            cache.set(key, kakao_ids, AREA_CACHE_SECONDS)
+        # 별점은 저장해 둔 값이 아니라 지금 DB 기준으로 다시 계산한다
+        places = {p.kakao_id: p for p in with_ratings(Place.objects.filter(kakao_id__in=kakao_ids))}
+        rows = [places[k] for k in kakao_ids if k in places]
+        if rows:
+            areas.append({'name': area, 'places': PlaceSerializer(rows, many=True).data})
+    return areas
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def home(request):
@@ -240,6 +268,7 @@ def home(request):
         'featured': {**PlaceSerializer(featured).data, 'week_count': featured.week_count} if featured else None,
         'ranking': PlaceSerializer(ranking, many=True).data,
         'recent': PlaceSerializer(recent, many=True).data,
+        'areas': trending_areas(category_filter(request).get('category')),
     })
 
 

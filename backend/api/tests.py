@@ -309,6 +309,11 @@ class ReviewApiTest(APITestCase):
 
 class HomeAndMeApiTest(APITestCase):
     def setUp(self):
+        cache.clear()
+        # 홈의 "요즘 뜨는 동네" 줄이 실제 카카오를 부르지 않도록
+        patcher = patch('api.kakao.search_places', return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
         def place(kid, name, cat):
             return Place.objects.create(kakao_id=kid, category=cat, name=name, address='서울 마포구', latitude=0, longitude=0)
 
@@ -532,3 +537,31 @@ class KakaoLoginTest(APITestCase):
         self.assertTrue(url.startswith('https://kauth.kakao.com/oauth/authorize?'))
         self.assertIn('redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fkakao', url)
         self.assertIn('state=' + 'x' * 32, url)
+
+
+
+class TrendingAreaTest(APITestCase):
+    def setUp(self):
+        cache.clear()
+
+    @patch('api.kakao.search_places')
+    def test_home_has_area_rows_and_caches_kakao(self, mock):
+        mock.side_effect = lambda q, c: [kakao_doc(f'{q}-{i}', f'{q} {i}') for i in range(12)]
+        res = self.client.get('/api/home/').json()
+        self.assertEqual([a['name'] for a in res['areas']], ['성수동', '망원동', '연남동', '익선동'])
+        self.assertEqual(len(res['areas'][0]['places']), 10)
+        mock.assert_any_call('성수동 카페', 'CE7')
+        calls = mock.call_count
+        self.client.get('/api/home/')
+        self.assertEqual(mock.call_count, calls)  # 두 번째는 저장해 둔 결과를 쓴다
+
+    @patch('api.kakao.search_places', return_value=[])
+    def test_restaurant_tab_searches_matjip(self, mock):
+        self.client.get('/api/home/', {'category': 'FD6'})
+        mock.assert_any_call('망원동 맛집', 'FD6')
+
+    @patch('api.kakao.search_places', side_effect=kakao.KakaoError('down'))
+    def test_kakao_failure_still_shows_home(self, mock):
+        res = self.client.get('/api/home/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['areas'], [])

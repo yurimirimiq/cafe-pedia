@@ -57,12 +57,23 @@ export default function Home() {
             <p className="total">지금까지 <b>★ {data.total_reviews.toLocaleString()}개</b>의 평가가 쌓였어요</p>
           </div>
 
-          <h2 id="ranking">카페피디아 인기 랭킹</h2>
-          {data.ranking.length ? (
-            <div className="row">{data.ranking.map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
-          ) : (
-            <p className="muted">아직 평가된 곳이 없어요. <Link to="/search" className="rating">검색해서 첫 별점 남기기</Link></p>
+          {data.ranking.length > 0 && (
+            <>
+              <h2 id="ranking">카페피디아 인기 랭킹</h2>
+              <div className="row">{data.ranking.map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
+            </>
           )}
+
+          {data.areas.map((area) => (
+            <section key={area.name} id={data.ranking.length ? undefined : 'ranking'}>
+              <h2>
+                요즘 뜨는 {area.name} {category === 'FD6' ? '맛집' : '카페'}
+                <Link to={`/search?q=${area.name} ${category === 'FD6' ? '맛집' : '카페'}`} className="muted small">더보기</Link>
+              </h2>
+              <div className="row">{area.places.map((p) => <PlaceCard key={p.id} place={p} />)}</div>
+            </section>
+          ))}
+          {data.areas.length > 0 && <p className="muted small credit">동네별 목록은 카카오 장소 검색 결과 순서예요.</p>}
 
           {data.recent.length > 0 && (
             <>
