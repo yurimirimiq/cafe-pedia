@@ -1,7 +1,9 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from .models import User
+from .models import Place, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -26,3 +28,27 @@ class SignupSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # create_user 가 비밀번호를 해시로 바꿔 저장한다
         return User.objects.create_user(**validated_data)
+
+
+class PlaceSerializer(serializers.ModelSerializer):
+    category_label = serializers.CharField(source='get_category_display', read_only=True)
+    # 평균 별점·평가 수는 view 에서 annotate 로 계산해 넘긴다
+    avg_rating = serializers.DecimalField(max_digits=2, decimal_places=1, read_only=True, allow_null=True)
+    review_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Place
+        fields = [
+            'id', 'name', 'category', 'category_label', 'category_detail',
+            'address', 'latitude', 'longitude', 'avg_rating', 'review_count',
+        ]
+
+
+class SafeTokenRefreshSerializer(TokenRefreshSerializer):
+    """탈퇴·삭제된 사용자의 refresh 토큰이면 500 대신 401(다시 로그인 필요)로 답한다"""
+
+    def validate(self, attrs):
+        try:
+            return super().validate(attrs)
+        except User.DoesNotExist:
+            raise AuthenticationFailed('사용자를 찾을 수 없어요. 다시 로그인하세요.')

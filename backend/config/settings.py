@@ -144,6 +144,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    # 검색처럼 throttle 을 건 API 의 호출 한도 (로그인 안 한 사람 / 한 사람)
+    'DEFAULT_THROTTLE_RATES': {'anon': '30/minute', 'user': '60/minute'},
 }
 
 # access 토큰은 짧게(유출돼도 피해가 작도록), refresh 토큰으로 새 access 토큰을 받는다

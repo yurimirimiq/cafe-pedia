@@ -12,6 +12,7 @@ class HelloApiTest(TestCase):
         self.assertEqual(res['Access-Control-Allow-Origin'], 'http://localhost:5173')
 
 
+import json
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -125,9 +126,98 @@ class AuthApiTest(TestCase):
     def test_me_requires_login(self):
         self.assertEqual(self.client.get('/api/auth/me/').status_code, 401)
 
+    def test_refresh_for_deleted_user_returns_401(self):
+        self.signup()
+        refresh = self.login().json()['refresh']
+        User.objects.filter(username='yurim').delete()
+        res = self.client.post('/api/auth/refresh/', {'refresh': refresh}, content_type='application/json')
+        self.assertEqual(res.status_code, 401)
+
     def test_refresh_gives_new_access_token(self):
         self.signup()
         refresh = self.login().json()['refresh']
         res = self.client.post('/api/auth/refresh/', {'refresh': refresh}, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertIn('access', res.json())
+
+
+from unittest.mock import patch
+
+from django.core.cache import cache
+
+from . import kakao
+
+
+def kakao_doc(kakao_id, name, code='CE7', detail='음식점 > 카페'):
+    """카카오 검색 응답의 장소 한 개 (테스트용)"""
+    return {
+        'id': kakao_id, 'place_name': name, 'category_group_code': code, 'category_name': detail,
+        'road_address_name': '서울 마포구 망원로 1', 'address_name': '서울 마포구 망원동 1',
+        'x': '126.9010000', 'y': '37.5560000',
+    }
+
+
+class PlaceSearchApiTest(TestCase):
+    def setUp(self):
+        cache.clear()  # 호출 횟수 제한 기록 초기화
+
+    def search(self, q='망원동 카페', **params):
+        return self.client.get('/api/places/search/', {'q': q, **params})
+
+    @patch('api.kakao.search_places')
+    def test_search_saves_places_and_keeps_order(self, mock):
+        mock.return_value = [kakao_doc('2', '두번째'), kakao_doc('1', '첫번째', 'FD6', '음식점 > 한식 > 국밥')]
+        res = self.search()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual([p['name'] for p in res.json()], ['두번째', '첫번째'])
+        self.assertEqual(res.json()[1]['category_label'], '식당')
+        self.assertEqual(Place.objects.count(), 2)
+
+    @patch('api.kakao.search_places')
+    def test_same_place_is_not_duplicated_and_gets_updated(self, mock):
+        mock.return_value = [kakao_doc('1', '옛 이름')]
+        self.search()
+        mock.return_value = [kakao_doc('1', '새 이름')]
+        self.search()
+        self.assertEqual(Place.objects.count(), 1)
+        self.assertEqual(Place.objects.get().name, '새 이름')
+
+    @patch('api.kakao.search_places')
+    def test_result_includes_average_rating(self, mock):
+        mock.return_value = [kakao_doc('1', '카페 온기')]
+        self.search()
+        place = Place.objects.get()
+        for i, rating in enumerate(['4.0', '5.0']):
+            user = User.objects.create_user(username=f'u{i}', password='x', nickname=f'n{i}')
+            Review.objects.create(user=user, place=place, rating=Decimal(rating))
+        body = self.search().json()[0]
+        self.assertEqual(body['avg_rating'], '4.5')
+        self.assertEqual(body['review_count'], 2)
+
+    @patch('api.kakao.search_places')
+    def test_category_is_passed_to_kakao(self, mock):
+        mock.return_value = []
+        self.search(category='FD6')
+        mock.assert_called_once_with('망원동 카페', 'FD6')
+
+    def test_empty_query_is_rejected(self):
+        self.assertEqual(self.search(q='  ').status_code, 400)
+
+    def test_unknown_category_is_rejected(self):
+        self.assertEqual(self.search(category='AT4').status_code, 400)
+
+    @patch('api.kakao.search_places', side_effect=kakao.KakaoError('down'))
+    def test_kakao_failure_returns_502(self, mock):
+        self.assertEqual(self.search().status_code, 502)
+
+    def test_kakao_client_drops_non_cafe_restaurant(self):
+        fake = {'documents': [kakao_doc('1', '카페'), kakao_doc('2', '지하철역', 'SW8'), kakao_doc('3', '식당', 'FD6')]}
+        with patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'}), patch('api.kakao.urlopen') as urlopen:
+            urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(fake).encode()
+            names = [d['place_name'] for d in kakao.search_places('망원동')]
+        self.assertEqual(names, ['카페', '식당'])
+
+    def test_kakao_client_requires_key(self):
+        with patch.dict('os.environ', {'KAKAO_REST_API_KEY': ''}):
+            with self.assertRaises(kakao.KakaoError):
+                kakao.search_places('망원동')
