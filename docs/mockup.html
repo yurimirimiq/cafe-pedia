@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카페피디아 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--ink:#2B211C;--brown:#7A4A2B;--crema:#C8A27C;--latte:#EFE6DC;--mute:#8C7F77;--line:#EEE9E4}
+*{box-sizing:border-box}
+body{margin:0;padding:32px;background:#F7F4F1;font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.01em}
+.cap{font-size:14px;color:var(--mute);margin:0 0 8px}
+.win{background:#fff;border:1px solid #E2DBD4;border-radius:14px;overflow:hidden;margin-bottom:28px;max-width:1200px}
+.chrome{display:flex;gap:6px;align-items:center;padding:10px 14px;background:#F7F4F1;border-bottom:1px solid var(--line)}
+.chrome i{width:11px;height:11px;border-radius:50%;background:#DDD5CE}
+.url{margin-left:14px;font-size:13px;color:var(--mute);background:#fff;border-radius:6px;padding:3px 14px}
+.nav{display:flex;align-items:center;gap:28px;padding:18px 40px;border-bottom:1px solid var(--line);font-size:15px}
+.logo{font-size:22px;font-weight:700;color:var(--brown);letter-spacing:-0.03em}
+.on{font-weight:600}.off{color:var(--mute)}
+.srch{margin-left:auto;background:#F5F1ED;border-radius:8px;padding:8px 14px;width:300px;color:var(--mute);font-size:14px}
+.btn{display:inline-block;padding:9px 18px;border-radius:8px;background:var(--latte);color:var(--brown);font-size:14px;font-weight:500}
+.btn.solid{background:var(--brown);color:#fff}
+.pg{padding:24px 40px 32px}
+.sec{font-size:18px;font-weight:600;margin:4px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:16px;margin-bottom:28px}
+.pt{aspect-ratio:3/4;border-radius:8px;display:flex;align-items:flex-end;padding:12px;font-size:30px;font-weight:600}
+.pn{font-size:15px;margin-top:8px}
+.pm{font-size:13px;color:var(--mute)}
+.pr{font-size:13px;color:var(--brown);font-weight:500}
+.d1{background:#3B2A21;color:#EFE6DC}.d2{background:#C8A27C;color:#3B2A21}.d3{background:#EFE6DC;color:#7A4A2B}.d4{background:#7A4A2B;color:#EFE6DC}
+.detail{display:grid;grid-template-columns:200px 1fr 300px;gap:36px;align-items:start;padding:36px 40px 24px}
+.stars{font-size:36px;color:var(--line);letter-spacing:2px}.stars b{color:var(--brown);font-weight:400}
+.map{height:170px;border-radius:8px;background:#F5F1ED;display:flex;align-items:center;justify-content:center;color:var(--mute)}
+.cms{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cm{border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px}
+.cm .h{display:flex;justify-content:space-between;font-weight:600}
+.cm p{margin:6px 0 0;color:#5C514A}
+</style>
+</head>
+<body>
+<p class="cap">홈</p>
+<div class="win">
+  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="on">홈</span><span class="off">랭킹</span><span class="off">동네별</span><span class="srch">카페, 동네 검색</span><span class="off">로그인</span><span class="btn solid">회원가입</span></div>
+  <div class="pg">
+    <p class="sec">망원동에서 평가가 높은 카페</p>
+    <div class="grid">
+      <div><div class="pt d1">온</div><div class="pn">카페 온기</div><div class="pm">망원동</div><div class="pr">평균 ★4.6</div></div>
+      <div><div class="pt d2">오</div><div class="pn">오후세시 베이크</div><div class="pm">망원동</div><div class="pr">평균 ★4.4</div></div>
+      <div><div class="pt d3">책</div><div class="pn">책방 커피</div><div class="pm">망원동</div><div class="pr">평균 ★4.4</div></div>
+      <div><div class="pt d4">숲</div><div class="pn">숲속 로스터스</div><div class="pm">망원동</div><div class="pr">평균 ★4.3</div></div>
+      <div><div class="pt d1" style="color:#C8A27C">달</div><div class="pn">달빛 카페</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
+      <div><div class="pt d2" style="color:#fff">브</div><div class="pn">스터디 브루</div><div class="pm">망원동</div><div class="pr">평균 ★4.2</div></div>
+      <div><div class="pt d3" style="color:#3B2A21">골</div><div class="pn">골목 커피</div><div class="pm">망원동</div><div class="pr">평균 ★4.1</div></div>
+    </div>
+    <p class="sec">작업하기 좋은 카페</p>
+    <div class="grid" style="margin-bottom:0">
+      <div><div class="pt d3">창</div><div class="pn">창가의 오후</div><div class="pm">연남동</div><div class="pr">평균 ★4.5</div></div>
+      <div><div class="pt d1">모</div><div class="pn">모퉁이 커피</div><div class="pm">합정동</div><div class="pr">평균 ★4.3</div></div>
+      <div><div class="pt d4">집</div><div class="pn">작업실 카페</div><div class="pm">서교동</div><div class="pr">평균 ★4.3</div></div>
+      <div><div class="pt d2">빛</div><div class="pn">빛과 커피</div><div class="pm">연남동</div><div class="pr">평균 ★4.1</div></div>
+      <div><div class="pt d3" style="color:#3B2A21">조</div><div class="pn">조용한 오후</div><div class="pm">망원동</div><div class="pr">평균 ★4.0</div></div>
+      <div><div class="pt d1" style="color:#C8A27C">밤</div><div class="pn">밤의 서재</div><div class="pm">합정동</div><div class="pr">평균 ★4.0</div></div>
+      <div><div class="pt d4">결</div><div class="pn">결 커피랩</div><div class="pm">서교동</div><div class="pr">평균 ★3.9</div></div>
+    </div>
+  </div>
+</div>
+
+<p class="cap">카페 상세</p>
+<div class="win">
+  <div class="chrome"><i></i><i></i><i></i><span class="url">cafepedia.kr/cafe/onki</span></div>
+  <div class="nav"><span class="logo">cafepedia</span><span class="off">홈</span><span class="off">랭킹</span><span class="off">동네별</span><span class="srch">카페, 동네 검색</span><span class="off">내 기록</span></div>
+  <div class="detail">
+    <div class="pt d1" style="font-size:56px;padding:18px">온</div>
+    <div>
+      <div style="font-size:34px;font-weight:700;letter-spacing:-0.03em">카페 온기</div>
+      <div class="pm" style="font-size:15px;margin-top:4px">카페 / 서울 마포구 망원동</div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin:22px 0 18px;padding-bottom:18px;border-bottom:1px solid var(--line)">
+        <span style="font-size:52px;font-weight:700;color:var(--brown);line-height:1;letter-spacing:-0.03em">4.6</span>
+        <span class="pm" style="font-size:15px">128명이 평가했어요</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px">
+        <div><div class="pr" style="font-size:14px">4.0점, 좋아요</div><div class="stars"><b>★★★★</b>★</div></div>
+        <span class="btn">가고 싶어요</span>
+        <span class="btn">한 줄 평 쓰기</span>
+      </div>
+    </div>
+    <div>
+      <div class="map">지도</div>
+      <div style="font-size:14px;color:#5C514A;margin-top:12px;line-height:1.8">매일 11:00 – 22:00<br>콘센트 있음, 주차 불가</div>
+    </div>
+  </div>
+  <div class="pg" style="padding-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><p class="sec">한 줄 평 <span class="pm" style="font-weight:400;font-size:15px">42</span></p><span class="pm">더보기</span></div>
+    <div class="cms">
+      <div class="cm"><div class="h"><span>민지</span><span class="pr">★5.0</span></div><p>디저트 때문에 또 갈 것 같아요</p></div>
+      <div class="cm"><div class="h"><span>카공러</span><span class="pr">★4.0</span></div><p>콘센트 많고 조용해요</p></div>
+      <div class="cm"><div class="h"><span>망원주민</span><span class="pr">★4.5</span></div><p>라떼가 진하고 창가 자리가 좋아요</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
