@@ -21,8 +21,8 @@ class PlaceAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ['place', 'user', 'rating', 'comment', 'visited_on']
-    list_filter = ['rating', 'place__category']
+    list_display = ['place', 'user', 'rating', 'comment', 'visited_on', 'receipt_verified_at']
+    list_filter = ['rating', 'place__category', ('receipt_verified_at', admin.EmptyFieldListFilter)]
     search_fields = ['place__name', 'user__nickname', 'comment']
 
 

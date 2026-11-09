@@ -79,6 +79,9 @@ class Review(models.Model):
     visited_on = models.DateField('방문일', default=timezone.localdate)
     # 고른 키워드 최대 3개 (예: ["커피 맛집", "조용함"])
     tags = models.JSONField('키워드', default=list, blank=True)
+    # 영수증 인증: 인증된 시각, 같은 영수증 재사용을 막는 지문(영수증 사진은 저장하지 않음)
+    receipt_verified_at = models.DateTimeField('영수증 인증 시각', null=True, blank=True)
+    receipt_fingerprint = models.CharField('영수증 지문', max_length=64, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -652,3 +652,116 @@ class ReviewPhotoTest(APITestCase):
         self.assertEqual(detail['thumbnail_source'], '')
         self.assertEqual(len(detail['comments']), 1)
         self.assertEqual(len(detail['comments'][0]['photos']), 1)
+
+
+from datetime import date
+
+from . import receipts
+
+SAMPLE_RECEIPT = """(주)온기에프앤비 카페 온기 성수점
+서울 성동구 연무장길 12
+2026-11-07 14:32:10
+아메리카노 1 4,500
+바스크치즈케이크 1 8,000
+합계 12,500
+승인번호 30012345"""
+
+
+class ReceiptRulesTest(TestCase):
+    def place(self, name='카페 온기 성수점', address='서울 성동구 연무장길 12'):
+        return Place(name=name, address=address, category='CE7', kakao_id='x', latitude=0, longitude=0)
+
+    def test_finds_recent_paid_date_in_many_formats(self):
+        today = date(2026, 11, 9)
+        for text, expected in [
+            ('2026-11-07 14:32', date(2026, 11, 7)),
+            ('2026.11.07', date(2026, 11, 7)),
+            ('2026년 11월 7일', date(2026, 11, 7)),
+            ('26/11/07 결제', date(2026, 11, 7)),
+            ('2026-12-01', None),  # 미래
+            ('2025-01-01', None),  # 90일보다 오래됨
+            ('2026-13-40', None),  # 없는 날짜
+        ]:
+            self.assertEqual(receipts.find_paid_date(text, today), expected, text)
+
+    def test_store_name_matching(self):
+        place = self.place()
+        self.assertTrue(receipts.matches_place('카페온기 성수점 영수증', place))
+        self.assertTrue(receipts.matches_place('(주)온기 망원', place))  # "카페"·지점명 빼고도 맞음
+        self.assertTrue(receipts.matches_place('주소 연무장길 12', self.place(name='전혀 다른 이름')))  # 주소로 맞음
+        self.assertFalse(receipts.matches_place('스타벅스 성수역점 2026-11-07', place))
+
+    def test_fingerprint_uses_approval_number(self):
+        a = receipts.fingerprint('승인번호 30012345 합계 12,500', 1, date(2026, 11, 7))
+        b = receipts.fingerprint('승인 번호: 30012345 (다시 찍음)', 1, date(2026, 11, 7))
+        c = receipts.fingerprint('승인번호 99999999', 1, date(2026, 11, 7))
+        self.assertEqual(a, b)
+        self.assertNotEqual(a, c)
+
+
+class ReceiptApiTest(APITestCase):
+    def setUp(self):
+        cache.clear()
+        self.place = Place.objects.create(kakao_id='1', category=Place.Category.CAFE, name='카페 온기 성수점', address='서울 성동구 연무장길 12', latitude=0, longitude=0)
+        self.url = f'/api/places/{self.place.id}/'
+        self.me = User.objects.create_user(username='me', password='x', nickname='나')
+        self.client.force_authenticate(self.me)
+
+    def rate(self, user=None, rating='4.0'):
+        self.client.force_authenticate(user or self.me)
+        self.client.put(self.url + 'review/', {'rating': rating}, format='json')
+
+    def send(self, text=SAMPLE_RECEIPT):
+        # 가짜 OCR + "오늘"을 2026-11-09로 고정
+        with patch('api.receipts.read_text', return_value=text), patch('api.views.timezone.localdate', return_value=date(2026, 11, 9)):
+            return self.client.post(self.url + 'review/receipt/', {'receipt': make_jpeg(with_gps=False)}, format='multipart')
+
+    def test_needs_rating_first(self):
+        self.assertEqual(self.send().status_code, 400)
+
+    def test_verifies_and_sets_visit_date(self):
+        self.rate()
+        res = self.send()
+        self.assertEqual(res.status_code, 200, res.json())
+        self.assertTrue(res.json()['my_review']['verified'])
+        self.assertEqual(res.json()['my_review']['visited_on'], '2026-11-07')
+        detail = self.client.get(self.url).json()
+        self.assertEqual((detail['verified_count'], detail['verified_avg']), (1, '4.0'))
+        self.assertTrue(detail['comments'][0]['verified'])  # 한 줄 평이 없어도 인증 리뷰는 목록에
+
+    def test_wrong_store_or_no_date_is_rejected_with_reason(self):
+        self.rate()
+        res = self.send('스타벅스 성수역점 2026-11-07 승인번호 1234')
+        self.assertEqual(res.status_code, 400)
+        self.assertFalse(res.json()['check']['store'])
+        res = self.send('카페 온기 성수점 합계 12,500')
+        self.assertEqual(res.status_code, 400)
+        self.assertIsNone(res.json()['check']['date'])
+
+    def test_same_receipt_cannot_be_reused_by_others(self):
+        self.rate()
+        self.send()
+        other = User.objects.create_user(username='o', password='x', nickname='남')
+        self.rate(other)
+        res = self.send()
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('이미', res.json()['detail'])
+
+    def test_verified_visit_date_is_locked(self):
+        self.rate()
+        self.send()
+        res = self.client.put(self.url + 'review/', {'visited_on': '2026-11-01'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(self.client.put(self.url + 'review/', {'rating': '5.0'}, format='json').status_code, 200)
+
+    def test_ocr_not_configured(self):
+        self.rate()
+        with patch.dict('os.environ', {'CLOVA_OCR_URL': '', 'CLOVA_OCR_SECRET': ''}):
+            res = self.client.post(self.url + 'review/receipt/', {'receipt': make_jpeg(with_gps=False)}, format='multipart')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('준비 중', res.json()['detail'])
+
+    def test_rejects_non_image(self):
+        self.rate()
+        fake = SimpleUploadedFile('r.jpg', b'nope', content_type='image/jpeg')
+        self.assertEqual(self.client.post(self.url + 'review/receipt/', {'receipt': fake}, format='multipart').status_code, 400)

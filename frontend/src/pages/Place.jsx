@@ -24,6 +24,7 @@ export default function Place() {
   const [editingComment, setEditingComment] = useState(false)
   const [comment, setComment] = useState('')
   const [files, setFiles] = useState([]) // 새로 고른 사진 (아직 안 올림)
+  const [reviewTab, setReviewTab] = useState('all') // 'all' | 'verified'
 
   const load = () =>
     apiFetch(`/api/places/${id}/`)
@@ -119,6 +120,7 @@ export default function Place() {
   if (status === 'error') return <p className="page error">불러오지 못했어요. 잠시 후 다시 시도하세요.</p>
 
   const mine = place.my_review
+  const shown = reviewTab === 'verified' ? place.comments.filter((c) => c.verified) : place.comments
   const tagCounts = place.tag_counts.length ? place.tag_counts : keywords(place).map((tag) => ({ tag }))
   return (
     <article className="place">
@@ -127,7 +129,12 @@ export default function Place() {
           <h1>{place.name}</h1>
           <p>{area(place.address)}, {place.category_detail.split(' > ').at(-1)}</p>
         </div>
-        {place.avg_rating && <span className="score">{place.avg_rating}</span>}
+        {place.avg_rating && (
+          <div className="scores">
+            <span className="score">{place.avg_rating}</span>
+            {place.verified_count > 0 && <small>영수증 인증 {place.verified_count}명 평균 {place.verified_avg}</small>}
+          </div>
+        )}
       </Poster>
 
       <div className="place-body">
@@ -151,11 +158,13 @@ export default function Place() {
             {tagCounts.map(({ tag, count }) => <li key={tag}>{tag}{count && <em>{count}</em>}</li>)}
           </ul>
 
+          <ReceiptBox place={place} user={user} onVerified={load} />
+
           {mine && (
             <div className="mine">
               <label className="pill-date">
                 <span>방문일</span>
-                <input type="date" value={mine.visited_on} max={today()} onChange={(e) => e.target.value && saveReview({ visited_on: e.target.value })} />
+                <input type="date" value={mine.visited_on} max={today()} disabled={mine.verified} title={mine.verified ? '영수증으로 인증된 날짜예요' : undefined} onChange={(e) => e.target.value && saveReview({ visited_on: e.target.value })} />
               </label>
               <div className="tag-picker">
                 <span className="muted small">이곳을 키워드로 표현하면? (최대 3개)</span>
@@ -203,13 +212,30 @@ export default function Place() {
           )}
 
           <section className="reviews" id="comments">
-            <h2>한 줄 평 {place.comments.length}</h2>
-            {place.comments.length === 0 && <p className="muted">아직 한 줄 평이 없어요. 다녀왔다면 첫 한 줄 평을 남겨 보세요.</p>}
-            {place.comments.map((c) => (
+            <h2>한 줄 평</h2>
+            <div className="seg" role="tablist" aria-label="한 줄 평 보기">
+              <button role="tab" aria-pressed={reviewTab === 'all'} onClick={() => setReviewTab('all')}>전체 <em>{place.comments.length}</em></button>
+              <button role="tab" aria-pressed={reviewTab === 'verified'} onClick={() => setReviewTab('verified')}>영수증 인증 <em>{place.verified_count}</em></button>
+            </div>
+            {reviewTab === 'verified' && place.verified_count > 0 && (
+              <div className="verified-sum">
+                <b>{place.verified_avg}</b>
+                <span>실제로 다녀간 {place.verified_count}명의 평균이에요</span>
+                {place.avg_rating && <span className="vs">전체 평균 {place.avg_rating}</span>}
+              </div>
+            )}
+            {shown.length === 0 && (
+              <p className="muted empty">
+                {reviewTab === 'verified' ? '아직 영수증으로 인증된 리뷰가 없어요. 다녀왔다면 첫 인증 리뷰를 남겨 보세요.' : '아직 한 줄 평이 없어요. 다녀왔다면 첫 한 줄 평을 남겨 보세요.'}
+              </p>
+            )}
+            {shown.map((c) => (
               <div key={c.id} className="rv">
                 <span className="avatar">{c.nickname[0]}</span>
                 <div>
                   <strong>{c.nickname}</strong>
+                  {c.verified && <span className="badge">영수증 인증</span>}
+                  {c.verified && <div className="meta">{Number(c.visited_on.slice(5, 7))}월 {Number(c.visited_on.slice(8))}일 방문</div>}
                   {c.comment && <p>{c.comment}</p>}
                   {c.photos.length > 0 && (
                     <div className="shots">
@@ -263,6 +289,59 @@ function NearbyPicks({ place }) {
           {p.avg_rating && <b>{p.avg_rating}</b>}
         </Link>
       ))}
+    </div>
+  )
+}
+
+// 영수증 인증: 사진을 고르면 바로 서버로 보내고, 가게 이름·결제일 확인 결과를 보여준다
+function ReceiptBox({ place, user, onVerified }) {
+  const navigate = useNavigate()
+  const [state, setState] = useState({ status: 'idle' }) // idle → reading → done | fail
+  const mine = place.my_review
+
+  async function send(e) {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    setState({ status: 'reading' })
+    const form = new FormData()
+    form.append('receipt', file)
+    try {
+      const res = await apiFetch(`/api/places/${place.id}/review/receipt/`, { method: 'POST', body: form })
+      setState({ status: 'done', check: res.check })
+      onVerified()
+    } catch (err) {
+      setState({ status: 'fail', detail: err.data?.detail ?? '영수증을 확인하지 못했어요.', check: err.data?.check })
+    }
+  }
+
+  if (mine?.verified) {
+    return <p className="receipt-ok"><span className="badge">영수증 인증</span> {mine.visited_on.replaceAll('-', '. ')} 방문이 확인됐어요.</p>
+  }
+
+  return (
+    <div className="receipt-box">
+      <div>
+        <h3>다녀오셨나요?</h3>
+        <p>영수증을 찍어 올리면 가게 이름과 결제일을 확인해서 리뷰에 인증 표시를 달아드려요. 영수증 사진은 저장하지 않아요.</p>
+      </div>
+      {!user ? (
+        <button className="btn dark" onClick={() => navigate('/login')}>로그인하고 인증하기</button>
+      ) : !mine ? (
+        <p className="muted small">별점을 먼저 남기면 인증할 수 있어요.</p>
+      ) : (
+        <label className={`btn dark${state.status === 'reading' ? ' busy' : ''}`}>
+          <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={send} disabled={state.status === 'reading'} />
+          {state.status === 'reading' ? '영수증 읽는 중…' : state.status === 'fail' ? '다시 찍기' : '영수증으로 인증하기'}
+        </label>
+      )}
+      {state.check && (
+        <dl className="receipt-check">
+          <dt>가게 이름</dt><dd className={state.check.store ? 'ok' : 'no'}>{state.check.store ? `${place.name} ✓` : '찾지 못했어요'}</dd>
+          <dt>결제일</dt><dd className={state.check.date ? 'ok' : 'no'}>{state.check.date ? `${state.check.date.replaceAll('-', '. ')} ✓` : '찾지 못했어요'}</dd>
+        </dl>
+      )}
+      {state.status === 'fail' && <p className="error" role="alert">{state.detail}</p>}
     </div>
   )
 }

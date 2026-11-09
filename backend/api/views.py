@@ -4,7 +4,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Avg, Count, Max, Q
+from django.db import IntegrityError
+from django.db.models import Avg, Count, F as models_f, Max, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from . import kakao, photos
+from . import kakao, photos, receipts
 from .models import MAX_PHOTOS, TAG_OPTIONS, Place, Review, ReviewPhoto, User, Wishlist
 from .serializers import (
     MyReviewSerializer,
@@ -163,11 +164,20 @@ def place_detail(request, place_id):
     """장소 상세: 장소 정보 + 평균 별점 + 한 줄 평 목록 (+ 로그인했다면 내 별점·가고 싶어요 여부)"""
     fill_thumbnails(Place.objects.filter(pk=place_id, thumbnail_checked_at__isnull=True))
     place = get_object_or_404(with_ratings(Place.objects.all()), pk=place_id)
-    # 한 줄 평이나 사진이 있는 리뷰만 목록에 보여준다
-    reviews = place.reviews.select_related('user').prefetch_related('photos').exclude(comment='', photos__isnull=True).distinct()[:30]
+    # 한 줄 평·사진이 있거나 영수증 인증된 리뷰를 목록에 보여준다 (인증된 리뷰 먼저)
+    reviews = (
+        place.reviews.select_related('user').prefetch_related('photos')
+        .exclude(comment='', photos__isnull=True, receipt_verified_at__isnull=True)
+        .distinct()
+        .order_by(models_f('receipt_verified_at').desc(nulls_last=True), '-created_at')[:50]
+    )
+    verified = place.reviews.filter(receipt_verified_at__isnull=False).aggregate(avg=Avg('rating'), n=Count('id'))
     data = {
         **PlaceSerializer(place).data,
         'comments': ReviewSerializer(reviews, many=True).data,
+        # 영수증 인증된 사람 수와 그 사람들만의 평균 별점
+        'verified_count': verified['n'],
+        'verified_avg': f"{verified['avg']:.1f}" if verified['avg'] is not None else None,
         'tag_options': TAG_OPTIONS[place.category],
         # 키워드별로 고른 사람 수 (많은 순 3개): [{"tag": "디저트 맛집", "count": 42}, ...]
         'tag_counts': [
@@ -412,3 +422,47 @@ def my_review_photo(request, place_id, photo_id):
     photo.image.delete(save=False)
     photo.delete()
     return Response({'my_review': MyReviewSerializer(review).data})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([UserRateThrottle])
+def my_review_receipt(request, place_id):
+    """영수증 인증: form-data 의 receipt(사진) → 가게 이름·결제일 확인 → 내 리뷰에 인증 표시, 방문일을 결제일로
+
+    실패하면 400 과 함께 무엇이 맞고 틀렸는지(check)를 돌려준다. 영수증 사진은 저장하지 않는다.
+    """
+    place = get_object_or_404(Place, pk=place_id)
+    review = Review.objects.filter(user=request.user, place=place).first()
+    if review is None:
+        return Response({'detail': '별점을 먼저 남겨 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    if review.receipt_verified_at:
+        return Response({'detail': '이미 영수증 인증을 받은 리뷰예요.'}, status=status.HTTP_400_BAD_REQUEST)
+    upload = request.FILES.get('receipt')
+    if not upload:
+        return Response({'detail': '영수증 사진을 골라 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        text = receipts.read_text(receipts.to_jpeg(upload))
+    except receipts.ReceiptError as e:
+        return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    paid = receipts.find_paid_date(text, timezone.localdate())
+    check = {'store': receipts.matches_place(text, place), 'date': paid}
+    if not check['store']:
+        reason = f'영수증에서 "{place.name}"을(를) 찾지 못했어요. 가게 이름이 잘 보이게 다시 찍어 주세요.'
+    elif not paid:
+        reason = f'최근 {receipts.MAX_AGE_DAYS}일 안의 결제일을 찾지 못했어요. 날짜가 잘 보이게 다시 찍어 주세요.'
+    else:
+        reason = None
+    if reason:
+        return Response({'detail': reason, 'check': check}, status=status.HTTP_400_BAD_REQUEST)
+
+    review.receipt_fingerprint = receipts.fingerprint(text, place.id, paid)
+    review.receipt_verified_at = timezone.now()
+    review.visited_on = paid
+    try:
+        review.save(update_fields=['receipt_fingerprint', 'receipt_verified_at', 'visited_on'])
+    except IntegrityError:  # 같은 영수증 지문이 이미 있음
+        return Response({'detail': '이미 다른 리뷰 인증에 쓰인 영수증이에요.', 'check': check}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'check': check, 'my_review': MyReviewSerializer(review).data})

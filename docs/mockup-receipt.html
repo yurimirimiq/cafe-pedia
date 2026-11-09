@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카페피디아 영수증 인증 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap">
+<style>
+:root{--paper:#fff;--ink:#221A15;--brown:#6B3F24;--oat:#F2EDE7;--line:#E3DAD0;--mute:#8A7F77;--ok:#2F6B4F;--okbg:#E6F0EA;--display:'Bricolage Grotesque',sans-serif}
+*{box-sizing:border-box;margin:0}
+body{background:#EDE8E2;padding:40px;font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.02em}
+.cap{font-size:13px;color:var(--mute);margin:0 0 10px}
+.frame{background:var(--paper);border-radius:20px;overflow:hidden;width:1280px;margin-bottom:48px}
+.ph{position:relative;overflow:hidden;border-radius:14px;background:radial-gradient(60% 50% at 30% 70%,#C89B6D 0,transparent 70%),radial-gradient(50% 60% at 75% 30%,#F4E9DA 0,transparent 70%),linear-gradient(160deg,#5B3A26,#2E2019)}
+.ph.b{background:radial-gradient(50% 45% at 40% 55%,#FBF6EE 0,transparent 70%),radial-gradient(45% 45% at 80% 20%,#C9A27A 0,transparent 70%),linear-gradient(190deg,#E4D6C3,#B79C7E)}
+.score{font-family:var(--display);font-weight:800;line-height:.82;letter-spacing:-0.05em;color:#fff}
+.top{display:flex;align-items:center;gap:28px;padding:20px 48px}
+.logo{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-0.04em}
+.search{flex:1;max-width:440px;margin:0 auto;background:var(--oat);border-radius:999px;padding:12px 20px;font-size:15px;color:var(--mute)}
+.menu{display:flex;gap:24px;font-size:15px;color:var(--mute)}
+.me{width:36px;height:36px;border-radius:50%;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hero{height:300px;margin:8px 48px 0;display:flex;align-items:flex-end;justify-content:space-between;padding:32px;color:#fff}
+.hero h1{font-size:48px;font-weight:800;letter-spacing:-0.05em}
+.hero p{margin-top:8px;opacity:.9}
+.hero .scores{text-align:right}
+.hero .score{font-size:150px}
+.hero small{display:block;margin-top:10px;font-size:15px;font-weight:600}
+.body{display:grid;grid-template-columns:7fr 4fr;gap:48px;padding:32px 48px 56px}
+
+/* 인증 배지: 이번 기능에서 유일하게 새로 생긴 색 (초록 = 확인됨) */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--ok);background:var(--okbg);border-radius:999px;padding:3px 9px}
+.badge::before{content:'✓'}
+
+.tabs{display:flex;gap:6px;background:var(--oat);border-radius:999px;padding:4px;width:max-content;margin:4px 0 8px}
+.tabs span{padding:9px 18px;border-radius:999px;font-size:15px;font-weight:700;color:var(--mute)}
+.tabs span.on{background:#fff;color:var(--ink)}
+.tabs em{font-style:normal;font-weight:500;margin-left:4px;color:var(--mute)}
+h2{font-size:22px;font-weight:800;letter-spacing:-0.04em;margin:8px 0 14px}
+.sum{display:flex;gap:28px;align-items:baseline;padding:18px 20px;border-radius:14px;background:var(--okbg);margin:12px 0 4px}
+.sum b{font-family:var(--display);font-size:40px;color:var(--ok);letter-spacing:-0.04em}
+.sum span{font-size:14px;color:var(--ok)}
+.sum .vs{margin-left:auto;color:var(--mute);font-size:14px}
+.rv{display:grid;grid-template-columns:44px 1fr auto;gap:14px;padding:20px 0;border-bottom:1px solid var(--line)}
+.av{width:44px;height:44px;border-radius:50%;background:var(--oat);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brown)}
+.rv strong{font-size:15px;margin-right:6px}
+.rv .meta{font-size:13px;color:var(--mute);margin-top:2px}
+.rv p{margin-top:6px;font-size:16px;line-height:1.55}
+.mini{font-family:var(--display);font-weight:800;font-size:28px;color:var(--brown)}
+.side .box{border:1.5px solid var(--line);border-radius:16px;padding:22px}
+.side h3{font-size:18px;font-weight:800;margin-bottom:8px}
+.side p{font-size:14px;color:var(--mute);line-height:1.6}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:12px 20px;font-size:15px;font-weight:700;background:var(--oat)}
+.btn.dark{background:var(--ink);color:#fff}
+.side .btn{width:100%;margin-top:16px}
+
+/* 모바일 단계 */
+.phones{display:flex;gap:28px}
+.phone{width:360px;height:740px;background:var(--paper);border-radius:36px;overflow:hidden;position:relative;padding:24px 20px}
+.step{font-size:13px;font-weight:700;color:var(--mute);margin-bottom:6px}
+.phone h3{font-size:24px;font-weight:800;letter-spacing:-0.04em;line-height:1.25}
+.phone .sub{font-size:14px;color:var(--mute);margin-top:6px;line-height:1.5}
+.field{margin-top:18px;border-radius:14px;background:var(--oat);padding:14px 16px;font-size:15px;color:var(--mute);height:96px}
+.stars{font-size:34px;color:var(--line);letter-spacing:2px;margin-top:16px}.stars i{font-style:normal;color:var(--brown)}
+.opt{margin-top:18px;border:1.5px dashed var(--mute);border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px}
+.opt b{font-size:15px}.opt span{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+.opt .ic{width:40px;height:40px;border-radius:12px;background:var(--okbg);color:var(--ok);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.cam{margin-top:18px;height:300px;border-radius:16px;background:#2a2420;position:relative;display:flex;align-items:center;justify-content:center}
+.paper{width:150px;height:230px;background:#f7f4ef;border-radius:4px;padding:14px 12px;display:flex;flex-direction:column;gap:7px}
+.paper i{display:block;height:6px;border-radius:3px;background:#d8d1c7}
+.paper i.hi{background:#9ec7ae}
+.frame-corner{position:absolute;inset:30px 70px;border:2px solid rgba(255,255,255,.7);border-radius:12px}
+.result{margin-top:16px;border-radius:14px;background:var(--oat);padding:6px 16px}
+.result div{display:flex;justify-content:space-between;padding:11px 0;font-size:15px;border-bottom:1px solid var(--line)}
+.result div:last-child{border:0}
+.result dt{color:var(--mute)}
+.result .ok{color:var(--ok);font-weight:700}
+.note{font-size:12px;color:var(--mute);margin-top:12px;line-height:1.5}
+.bottom{position:absolute;left:20px;right:20px;bottom:24px;display:flex;gap:8px}
+.bottom .btn{flex:1}
+.mrv{padding:14px 0;border-bottom:1px solid var(--line)}
+.mrv strong{font-size:14px;margin-right:6px}
+.mrv p{font-size:14px;margin-top:6px;line-height:1.5}
+.mrv .row{display:flex;align-items:center}
+.mrv .mini{font-size:22px;margin-left:auto}
+</style>
+</head>
+<body>
+
+<p class="cap">장소 상세: 한 줄 평을 "전체 / 영수증 인증"으로 나눠 보기</p>
+<div class="frame">
+  <div class="top"><span class="logo">cafepedia</span><span class="search">어디 가고 싶어요? 카페, 식당, 동네</span><nav class="menu"><span>홈</span><span>내 주변</span><span>캘린더</span><span>나의 기록</span></nav><span class="me">유</span></div>
+  <div class="ph hero">
+    <div><h1>카페 온기</h1><p>성동구, 디저트카페</p></div>
+    <div class="scores"><span class="score">4.6</span><small>영수증 인증 18명 평균 4.7</small></div>
+  </div>
+  <div class="body">
+    <div>
+      <h2>한 줄 평</h2>
+      <div class="tabs"><span>전체<em>42</em></span><span class="on">영수증 인증<em>18</em></span></div>
+      <div class="sum"><b>4.7</b><span>실제로 다녀간 18명의 평균이에요</span><span class="vs">전체 평균 4.6</span></div>
+      <div class="rv">
+        <span class="av">민</span>
+        <div><strong>민지</strong><span class="badge">영수증 인증</span><div class="meta">11월 7일 방문</div><p>바스크 치즈케이크 때문에 또 갈 것 같아요. 창가 자리는 오후 3시 이후 추천.</p></div>
+        <span class="mini">5.0</span>
+      </div>
+      <div class="rv">
+        <span class="av">카</span>
+        <div><strong>카공러</strong><span class="badge">영수증 인증</span><div class="meta">11월 2일 방문</div><p>콘센트 많고 음악이 작아서 오래 있기 좋아요.</p></div>
+        <span class="mini">4.0</span>
+      </div>
+      <div class="rv">
+        <span class="av">망</span>
+        <div><strong>망원주민</strong><span class="badge">영수증 인증</span><div class="meta">10월 28일 방문</div><p>라떼가 진하고 양이 넉넉해요.</p></div>
+        <span class="mini">4.5</span>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="box">
+        <h3>다녀오셨나요?</h3>
+        <p>영수증을 찍어 올리면 가게 이름과 날짜를 확인해서 리뷰에 인증 표시를 달아드려요. 영수증 사진은 확인 후 바로 지워요.</p>
+        <span class="btn dark">영수증으로 인증하기</span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<p class="cap">모바일: 영수증 인증 과정</p>
+<div class="phones">
+  <div class="phone">
+    <div class="step">1 / 3 · 한 줄 평 쓰기</div>
+    <h3>카페 온기 어땠어요?</h3>
+    <div class="stars"><i>★★★★★</i></div>
+    <div class="field">바스크 치즈케이크 때문에 또 갈 것 같아요.</div>
+    <div class="opt"><span class="ic">✓</span><div><b>영수증으로 방문 인증하기</b><span>인증된 리뷰는 따로 모아서 보여줘요 (선택)</span></div></div>
+    <div class="bottom"><span class="btn">그냥 올리기</span><span class="btn dark">영수증 인증</span></div>
+  </div>
+  <div class="phone">
+    <div class="step">2 / 3 · 영수증 찍기</div>
+    <h3>영수증 전체가<br>보이게 찍어 주세요</h3>
+    <div class="cam"><div class="paper"><i class="hi"></i><i style="width:70%"></i><i></i><i style="width:60%"></i><i></i><i style="width:80%"></i><i></i><i class="hi" style="width:55%"></i><i></i><i style="width:40%"></i></div><span class="frame-corner"></span></div>
+    <div class="result">
+      <div><dt>가게 이름</dt><dd class="ok">카페 온기 ✓</dd></div>
+      <div><dt>결제일</dt><dd class="ok">2026. 11. 07 ✓</dd></div>
+      <div><dt>금액</dt><dd>12,500원</dd></div>
+    </div>
+    <p class="note">가게 이름과 결제일만 확인해요. 카드번호 등 다른 내용은 저장하지 않고, 사진은 확인 즉시 지워요.</p>
+    <div class="bottom"><span class="btn">다시 찍기</span><span class="btn dark">인증하고 올리기</span></div>
+  </div>
+  <div class="phone">
+    <div class="step">3 / 3 · 완료</div>
+    <h3>인증된 리뷰로 올렸어요</h3>
+    <p class="sub">방문일도 영수증 날짜(11월 7일)로 맞췄어요.</p>
+    <div class="tabs" style="margin-top:20px"><span>전체<em>43</em></span><span class="on">영수증 인증<em>19</em></span></div>
+    <div class="mrv"><div class="row"><strong>유림</strong><span class="badge">영수증 인증</span><span class="mini">5.0</span></div><p>바스크 치즈케이크 때문에 또 갈 것 같아요.</p></div>
+    <div class="mrv"><div class="row"><strong>민지</strong><span class="badge">영수증 인증</span><span class="mini">5.0</span></div><p>창가 자리는 오후 3시 이후 추천.</p></div>
+    <div class="mrv"><div class="row"><strong>카공러</strong><span class="badge">영수증 인증</span><span class="mini">4.0</span></div><p>콘센트 많고 음악이 작아요.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

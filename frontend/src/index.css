@@ -281,3 +281,36 @@ a { color: inherit; text-decoration: none; }
   .cal-head .btn { margin-left: 0; }
   .shelves div { padding: 12px; }
 }
+
+/* 영수증 인증: 이 기능에서만 쓰는 "확인됨" 초록 */
+:root { --ok: #2f6b4f; --okbg: #e6f0ea; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--ok); background: var(--okbg); border-radius: 999px; padding: 3px 9px; vertical-align: 2px; }
+.badge::before { content: '✓'; }
+.rv strong + .badge { margin-left: 6px; }
+.rv .meta { font-size: 13px; color: var(--mute); margin-top: 2px; }
+.place-hero .scores { text-align: right; }
+.place-hero .scores small { display: block; margin-top: 10px; font-size: 15px; font-weight: 600; }
+.reviews .seg { margin-bottom: 8px; }
+.seg em { font-style: normal; font-weight: 500; color: var(--mute); margin-left: 2px; }
+.verified-sum { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; padding: 18px 20px; border-radius: 14px; background: var(--okbg); color: var(--ok); margin: 12px 0 4px; }
+.verified-sum b { font-family: var(--display); font-size: 40px; letter-spacing: -0.04em; }
+.verified-sum span { font-size: 14px; }
+.verified-sum .vs { margin-left: auto; color: var(--mute); }
+.reviews .empty { padding: 20px 0; }
+.receipt-box { margin-top: 20px; border: 1.5px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
+.receipt-box > div { flex: 1 1 320px; }
+.receipt-box h3 { font-size: 17px; font-weight: 800; }
+.receipt-box p { font-size: 14px; color: var(--mute); line-height: 1.6; margin-top: 4px; }
+.receipt-box .btn.busy { opacity: 0.6; }
+.receipt-box .error { flex-basis: 100%; }
+.receipt-check { flex-basis: 100%; margin: 0; display: grid; grid-template-columns: 80px 1fr; row-gap: 8px; font-size: 15px; padding: 12px 16px; border-radius: 12px; background: var(--oat); }
+.receipt-check dt { color: var(--mute); }
+.receipt-check dd { margin: 0; font-weight: 700; }
+.receipt-check .ok { color: var(--ok); }
+.receipt-check .no { color: var(--danger); }
+.receipt-ok { margin-top: 20px; font-size: 14px; color: var(--ok); font-weight: 600; }
+@media (max-width: 640px) {
+  .place-hero .scores small { font-size: 13px; }
+  .receipt-box .btn { width: 100%; }
+  .verified-sum .vs { margin-left: 0; }
+}

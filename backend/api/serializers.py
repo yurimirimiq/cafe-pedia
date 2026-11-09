@@ -83,13 +83,17 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     nickname = serializers.CharField(source='user.nickname', read_only=True)
     photos = serializers.SerializerMethodField()
+    verified = serializers.SerializerMethodField()
+
+    def get_verified(self, review):
+        return review.receipt_verified_at is not None
 
     def get_photos(self, review):
         return [p.image.url for p in review.photos.all()]
 
     class Meta:
         model = Review
-        fields = ['id', 'nickname', 'rating', 'comment', 'tags', 'photos', 'visited_on', 'updated_at']
+        fields = ['id', 'nickname', 'rating', 'comment', 'tags', 'photos', 'verified', 'visited_on', 'updated_at']
 
 
 class MyReviewSerializer(serializers.ModelSerializer):
@@ -97,9 +101,13 @@ class MyReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['rating', 'comment', 'visited_on', 'tags', 'photos']
+        fields = ['rating', 'comment', 'visited_on', 'tags', 'photos', 'verified']
 
     photos = serializers.SerializerMethodField()
+    verified = serializers.SerializerMethodField()
+
+    def get_verified(self, review):
+        return review.receipt_verified_at is not None
 
     def get_photos(self, review):
         return [{'id': p.id, 'url': p.image.url} for p in review.photos.all()]
@@ -119,4 +127,7 @@ class MyReviewSerializer(serializers.ModelSerializer):
     def validate_visited_on(self, value):
         if value > timezone.localdate():
             raise serializers.ValidationError('미래 날짜는 고를 수 없어요.')
+        # 영수증으로 인증된 방문일은 바꿀 수 없다
+        if self.instance and self.instance.receipt_verified_at and value != self.instance.visited_on:
+            raise serializers.ValidationError('영수증으로 인증된 방문일은 바꿀 수 없어요.')
         return value
