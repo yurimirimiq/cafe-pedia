@@ -451,6 +451,7 @@ class TagApiTest(APITestCase):
         # 3번 / 2번 선택된 순서대로, 세 번째는 1번씩 고른 것 중 하나
         self.assertEqual(res['top_tags'][:2], ['커피 맛집', '조용함'])
         self.assertIn(res['top_tags'][2], ['뷰 맛집', '좌석 넓음'])
+        self.assertEqual(res['tag_counts'][:2], [{'tag': '커피 맛집', 'count': 3}, {'tag': '조용함', 'count': 2}])
         self.assertIn('작업하기 좋음', res['tag_options'])
         self.assertNotIn('가성비', res['tag_options'])
 
@@ -565,3 +566,89 @@ class TrendingAreaTest(APITestCase):
         res = self.client.get('/api/home/')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['areas'], [])
+
+
+import shutil
+import tempfile
+from io import BytesIO
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+from PIL import Image
+
+from .models import ReviewPhoto
+
+TEMP_MEDIA = tempfile.mkdtemp()
+
+
+def make_jpeg(size=(3000, 2000), with_gps=True):
+    """테스트용 JPEG (촬영 위치 EXIF 포함)"""
+    img = Image.new('RGB', size, 'brown')
+    exif = Image.Exif()
+    if with_gps:
+        exif[0x8825] = {1: 'N', 2: (37.0, 33.0, 0.0)}  # GPSInfo
+    out = BytesIO()
+    img.save(out, 'JPEG', exif=exif)
+    return SimpleUploadedFile('latte.jpg', out.getvalue(), content_type='image/jpeg')
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA)
+class ReviewPhotoTest(APITestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        self.place = Place.objects.create(kakao_id='1', category=Place.Category.CAFE, name='카페', address='서울 마포구', latitude=0, longitude=0, thumbnail_url='https://img/search.jpg')
+        self.url = f'/api/places/{self.place.id}/review/photos/'
+        self.me = User.objects.create_user(username='me', password='x', nickname='나')
+        self.client.force_authenticate(self.me)
+
+    def rate(self):
+        self.client.put(f'/api/places/{self.place.id}/review/', {'rating': '4.0'}, format='json')
+
+    def upload(self, *files):
+        return self.client.post(self.url, {'photos': list(files)}, format='multipart')
+
+    def test_needs_rating_first(self):
+        self.assertEqual(self.upload(make_jpeg()).status_code, 400)
+
+    def test_upload_resizes_and_removes_location(self):
+        self.rate()
+        res = self.upload(make_jpeg(), make_jpeg())
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.json()['my_review']['photos']), 2)
+        saved = Image.open(ReviewPhoto.objects.first().image.path)
+        self.assertLessEqual(max(saved.size), 1600)
+        self.assertNotIn(0x8825, saved.getexif())  # GPS 정보가 지워졌다
+
+    def test_max_three_photos(self):
+        self.rate()
+        self.upload(make_jpeg(), make_jpeg())
+        res = self.upload(make_jpeg(), make_jpeg())
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(ReviewPhoto.objects.count(), 2)  # 하나도 추가되지 않음
+
+    def test_rejects_non_image(self):
+        self.rate()
+        fake = SimpleUploadedFile('virus.jpg', b'not an image', content_type='image/jpeg')
+        self.assertEqual(self.upload(fake).status_code, 400)
+
+    def test_delete_own_photo_only(self):
+        self.rate()
+        photo_id = self.upload(make_jpeg()).json()['my_review']['photos'][0]['id']
+        other = User.objects.create_user(username='o', password='x', nickname='남')
+        self.client.force_authenticate(other)
+        self.assertEqual(self.client.delete(f'{self.url}{photo_id}/').status_code, 404)
+        self.client.force_authenticate(self.me)
+        self.assertEqual(self.client.delete(f'{self.url}{photo_id}/').json()['my_review']['photos'], [])
+
+    def test_review_photo_becomes_place_poster_and_shows_in_list(self):
+        self.rate()  # 한 줄 평 없이 사진만
+        self.upload(make_jpeg())
+        detail = self.client.get(f'/api/places/{self.place.id}/').json()
+        self.assertTrue(detail['thumbnail_url'].startswith('/media/reviews/'))
+        self.assertEqual(detail['thumbnail_source'], '')
+        self.assertEqual(len(detail['comments']), 1)
+        self.assertEqual(len(detail['comments'][0]['photos']), 1)

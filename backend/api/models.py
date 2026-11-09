@@ -113,3 +113,17 @@ class Wishlist(models.Model):
 
     def __str__(self):
         return f'{self.user} ♡ {self.place}'
+
+
+MAX_PHOTOS = 3  # 리뷰 하나에 올릴 수 있는 사진 수
+
+
+class ReviewPhoto(models.Model):
+    """리뷰 사진. 서버에서 크기를 줄이고 위치 정보(EXIF)를 지운 JPEG 로 저장한다"""
+
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='photos')
+    image = models.ImageField('사진', upload_to='reviews/%Y/%m/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']

@@ -1,3 +1,4 @@
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
@@ -13,8 +14,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from . import kakao
-from .models import TAG_OPTIONS, Place, Review, User, Wishlist
+from . import kakao, photos
+from .models import MAX_PHOTOS, TAG_OPTIONS, Place, Review, ReviewPhoto, User, Wishlist
 from .serializers import (
     MyReviewSerializer,
     PlaceSerializer,
@@ -162,11 +163,17 @@ def place_detail(request, place_id):
     """장소 상세: 장소 정보 + 평균 별점 + 한 줄 평 목록 (+ 로그인했다면 내 별점·가고 싶어요 여부)"""
     fill_thumbnails(Place.objects.filter(pk=place_id, thumbnail_checked_at__isnull=True))
     place = get_object_or_404(with_ratings(Place.objects.all()), pk=place_id)
-    reviews = place.reviews.select_related('user').exclude(comment='')[:20]
+    # 한 줄 평이나 사진이 있는 리뷰만 목록에 보여준다
+    reviews = place.reviews.select_related('user').prefetch_related('photos').exclude(comment='', photos__isnull=True).distinct()[:30]
     data = {
         **PlaceSerializer(place).data,
         'comments': ReviewSerializer(reviews, many=True).data,
         'tag_options': TAG_OPTIONS[place.category],
+        # 키워드별로 고른 사람 수 (많은 순 3개): [{"tag": "디저트 맛집", "count": 42}, ...]
+        'tag_counts': [
+            {'tag': tag, 'count': n}
+            for tag, n in Counter(t for tags in place.reviews.values_list('tags', flat=True) for t in tags).most_common(3)
+        ],
         'my_review': None,
         'wished': False,
     }
@@ -192,6 +199,8 @@ def my_review(request, place_id):
 
     if request.method == 'DELETE':
         if review:
+            for photo in review.photos.all():
+                photo.image.delete(save=False)  # 파일도 지운다
             review.delete()
         return Response({'my_review': None, **place_summary(place_id)})
 
@@ -371,3 +380,35 @@ def kakao_login(request):
 
     refresh = RefreshToken.for_user(user)
     return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def my_review_photos(request, place_id):
+    """내 리뷰에 사진 올리기 (form-data 의 photos, 여러 장). 리뷰당 최대 3장"""
+    review = Review.objects.filter(user=request.user, place_id=place_id).first()
+    if review is None:
+        return Response({'detail': '별점을 먼저 남겨 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    files = request.FILES.getlist('photos')
+    if not files:
+        return Response({'detail': '사진을 골라 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    if review.photos.count() + len(files) > MAX_PHOTOS:
+        return Response({'detail': f'사진은 {MAX_PHOTOS}장까지 올릴 수 있어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        processed = [photos.process(f) for f in files]  # 하나라도 문제면 아무것도 저장하지 않는다
+    except photos.PhotoError as e:
+        return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    for content in processed:
+        ReviewPhoto.objects.create(review=review, image=content)
+    return Response({'my_review': MyReviewSerializer(review).data})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def my_review_photo(request, place_id, photo_id):
+    """내 리뷰 사진 하나 지우기 (남의 사진은 404)"""
+    photo = get_object_or_404(ReviewPhoto, pk=photo_id, review__user=request.user, review__place_id=place_id)
+    review = photo.review
+    photo.image.delete(save=False)
+    photo.delete()
+    return Response({'my_review': MyReviewSerializer(review).data})

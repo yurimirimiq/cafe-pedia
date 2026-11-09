@@ -128,6 +128,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# 사용자가 올린 사진 (개발 중에는 backend/media/ 폴더, 배포 때는 이미지 저장소로 바꾼다)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

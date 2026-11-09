@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from collections import Counter
 
-from .models import MAX_TAGS, TAG_OPTIONS, Place, Review, User
+from .models import MAX_TAGS, TAG_OPTIONS, Place, Review, ReviewPhoto, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -39,6 +39,19 @@ class PlaceSerializer(serializers.ModelSerializer):
     avg_rating = serializers.DecimalField(max_digits=2, decimal_places=1, read_only=True, allow_null=True)
     review_count = serializers.IntegerField(read_only=True)
     top_tags = serializers.SerializerMethodField()
+    # 대표 사진: 우리 사용자가 올린 리뷰 사진이 있으면 그것, 없으면 카카오 이미지 검색 썸네일
+    thumbnail_url = serializers.SerializerMethodField()
+    thumbnail_source = serializers.SerializerMethodField()
+
+    def _review_photo(self, place):
+        return ReviewPhoto.objects.filter(review__place=place).order_by('-created_at').first()
+
+    def get_thumbnail_url(self, place):
+        photo = self._review_photo(place)
+        return photo.image.url if photo else place.thumbnail_url
+
+    def get_thumbnail_source(self, place):
+        return '' if self._review_photo(place) else place.thumbnail_source
 
     def get_top_tags(self, place):
         """이 장소 리뷰에서 가장 많이 고른 키워드 3개"""
@@ -69,10 +82,14 @@ class ReviewSerializer(serializers.ModelSerializer):
     """다른 사람에게 보여줄 리뷰 (닉네임만 공개)"""
 
     nickname = serializers.CharField(source='user.nickname', read_only=True)
+    photos = serializers.SerializerMethodField()
+
+    def get_photos(self, review):
+        return [p.image.url for p in review.photos.all()]
 
     class Meta:
         model = Review
-        fields = ['id', 'nickname', 'rating', 'comment', 'tags', 'visited_on', 'updated_at']
+        fields = ['id', 'nickname', 'rating', 'comment', 'tags', 'photos', 'visited_on', 'updated_at']
 
 
 class MyReviewSerializer(serializers.ModelSerializer):
@@ -80,7 +97,12 @@ class MyReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['rating', 'comment', 'visited_on', 'tags']
+        fields = ['rating', 'comment', 'visited_on', 'tags', 'photos']
+
+    photos = serializers.SerializerMethodField()
+
+    def get_photos(self, review):
+        return [{'id': p.id, 'url': p.image.url} for p in review.photos.all()]
 
     def validate_tags(self, value):
         """장소 분류에 맞는 키워드만, 중복 없이 최대 3개 (place 는 view 가 context 로 넘긴다)"""

@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../api'
-import PlaceCard, { area } from '../components/PlaceCard'
+import PlaceCard from '../components/PlaceCard'
+import Poster from '../components/Poster'
 
-const TABS = [
-  ['', '홈'],
-  ['CE7', '카페'],
+const KINDS = [
+  ['', '카페'],
   ['FD6', '식당'],
 ]
+const short = (area) => area.replace(/동$/, '') // "성수동" → "성수"
 
 export default function Home() {
   const [params, setParams] = useSearchParams()
   const category = params.get('category') ?? ''
   const [data, setData] = useState(null)
   const [error, setError] = useState(false)
+  const [areaName, setAreaName] = useState(null)
 
   useEffect(() => {
     setError(false)
@@ -22,67 +24,75 @@ export default function Home() {
       .catch(() => setError(true))
   }, [category])
 
+  const area = data?.areas.find((a) => a.name === areaName) ?? data?.areas[0]
+  // 큰 사진 자리: 이번 주 가장 많이 평가된 곳, 없으면 고른 동네의 첫 번째 장소
+  const hero = data?.featured ?? area?.places[0]
+  const word = category === 'FD6' ? '맛집' : '카페'
+
   return (
-    <section className="page home">
-      <div className="tabs" role="tablist">
-        {TABS.map(([code, label]) => (
-          <button key={code} role="tab" aria-selected={category === code} onClick={() => setParams(code ? { category: code } : {})}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {error && <p className="error" role="alert">불러오지 못했어요. 잠시 후 다시 시도하세요.</p>}
-      {data && (
-        <>
-          <div className="home-top">
-            {data.featured ? (
-              <Link to={`/place/${data.featured.id}`} className="featured">
-                <span>이번 주 가장 많이 평가된 곳</span>
-                <strong>{area(data.featured.address)} {data.featured.name}</strong>
-                <span>평균 ★{data.featured.avg_rating}, 이번 주 평가 {data.featured.week_count}개</span>
-              </Link>
-            ) : (
-              <Link to="/search" className="featured">
-                <span>아직 이번 주 평가가 없어요</span>
-                <strong>첫 별점을 남겨 보세요</strong>
-                <span>다녀온 카페와 식당을 검색해서 평가할 수 있어요</span>
-              </Link>
-            )}
-            <div className="shortcuts">
-              <Link to="/search">평가하기</Link>
-              <Link to="/me">취향 분석</Link>
-              <a href="#ranking">랭킹</a>
+    <div className="home">
+      <section className="hero">
+        <div>
+          <h1>밥 먹고,<br />카페 가고,<br />별점 남기고.</h1>
+          <p>
+            다녀온 카페와 식당을 기록하면
+            <br />
+            {data?.total_reviews ? `지금까지 ${data.total_reviews.toLocaleString()}개의 별점이 쌓였어요.` : '취향이 비슷한 사람들의 단골집이 보여요.'}
+          </p>
+          {data && (
+            <div className="pills" role="tablist" aria-label="동네">
+              {data.areas.map((a) => (
+                <button key={a.name} role="tab" aria-selected={a === area} onClick={() => setAreaName(a.name)}>
+                  {short(a.name)}
+                </button>
+              ))}
             </div>
-            <p className="total">지금까지 <b>★ {data.total_reviews.toLocaleString()}개</b>의 평가가 쌓였어요</p>
-          </div>
-
-          {data.ranking.length > 0 && (
-            <>
-              <h2 id="ranking">카페피디아 인기 랭킹</h2>
-              <div className="row">{data.ranking.map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
-            </>
           )}
+        </div>
+        {hero && (
+          <Link to={`/place/${hero.id}`} className="hero-card">
+            <Poster place={hero} className="hero-photo">
+              {hero.avg_rating && <span className="score">{hero.avg_rating}</span>}
+              <span className="who">
+                <strong>{hero.name}</strong>
+                <span>{data.featured ? `이번 주 평가 ${data.featured.week_count}개` : `요즘 ${short(area.name)}에서 많이 찾는 ${word}`}</span>
+              </span>
+            </Poster>
+          </Link>
+        )}
+      </section>
 
-          {data.areas.map((area) => (
-            <section key={area.name} id={data.ranking.length ? undefined : 'ranking'}>
-              <h2>
-                요즘 뜨는 {area.name} {category === 'FD6' ? '맛집' : '카페'}
-                <Link to={`/search?q=${area.name} ${category === 'FD6' ? '맛집' : '카페'}`} className="muted small">더보기</Link>
-              </h2>
-              <div className="row">{area.places.map((p) => <PlaceCard key={p.id} place={p} />)}</div>
-            </section>
-          ))}
-          {data.areas.length > 0 && <p className="muted small credit">동네별 목록은 카카오 장소 검색 결과 순서예요.</p>}
+      {error && <p className="error page" role="alert">불러오지 못했어요. 잠시 후 다시 시도하세요.</p>}
 
-          {data.recent.length > 0 && (
-            <>
-              <h2>최근 평가된 곳</h2>
-              <div className="row">{data.recent.map((p) => <PlaceCard key={p.id} place={p} />)}</div>
-            </>
-          )}
-        </>
+      {data?.ranking.length > 0 && (
+        <section className="sec" id="ranking">
+          <div className="sec-head"><h2>카페피디아 별점 랭킹</h2></div>
+          <div className="cards">{data.ranking.slice(0, 8).map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
+        </section>
       )}
-    </section>
+
+      {area && (
+        <section className="sec">
+          <div className="sec-head">
+            <h2>요즘 {short(area.name)}에서 많이 가는 {word}</h2>
+            <div className="seg" role="group" aria-label="분류">
+              {KINDS.map(([code, label]) => (
+                <button key={code} aria-pressed={category === code} onClick={() => setParams(code ? { category: code } : {})}>{label}</button>
+              ))}
+            </div>
+          </div>
+          <div className="cards">{area.places.slice(0, 8).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
+          <Link to={`/search?q=${area.name} ${word}`} className="more">{short(area.name)} {word} 더 보기</Link>
+          <p className="muted small credit">동네별 목록은 카카오 장소 검색 결과 순서예요.</p>
+        </section>
+      )}
+
+      {data?.recent.length > 0 && (
+        <section className="sec">
+          <div className="sec-head"><h2>방금 별점이 남겨진 곳</h2></div>
+          <div className="cards">{data.recent.slice(0, 4).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
+        </section>
+      )}
+    </div>
   )
 }

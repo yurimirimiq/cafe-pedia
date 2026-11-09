@@ -8,20 +8,17 @@ export const keywords = (place, n = 3) =>
 // "서울 마포구 망원로 1" → "마포구"
 export const area = (address) => address.split(' ')[1] ?? ''
 
-// 포스터 + 이름 + 동네 + 별점. rank 를 주면 왼쪽 위에 순위를 표시한다
+// 사진 카드: 사진 위에 큰 별점 숫자, 아래에 이름과 키워드. rank 를 주면 왼쪽 위에 순위
 export default function PlaceCard({ place, rank, rating }) {
+  const score = rating ?? place.avg_rating
   return (
     <Link to={`/place/${place.id}`} className="card">
-      <div className="card-poster">
-        <Poster place={place} />
+      <Poster place={place} className="card-photo">
         {rank && <span className="rank">{rank}</span>}
-        <span className="tag">{place.category_label}</span>
-      </div>
-      <div className="card-name">{place.name}</div>
-      <div className="muted small ellipsis">{area(place.address)}, {keywords(place, 2).join(' · ')}</div>
-      <div className="rating small">
-        {rating ? `내 별점 ★${rating}` : place.avg_rating ? `평균 ★${place.avg_rating}` : '평가 없음'}
-      </div>
+        {score ? <span className="score">{score}</span> : <span className="no-score">아직 평가 없음</span>}
+      </Poster>
+      <h3>{place.name}</h3>
+      <p>{rating ? '내 별점' : keywords(place, 2).join(', ')}</p>
     </Link>
   )
 }

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카페피디아 시안 v2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap">
+<style>
+:root{
+  --paper:#FFFFFF; --ink:#221A15; --brown:#6B3F24; --oat:#F2EDE7; --line:#E3DAD0; --mute:#8A7F77;
+  --display:'Bricolage Grotesque',sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:#EDE8E2;padding:40px;font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.02em}
+.cap{font-size:13px;color:var(--mute);margin:0 0 10px}
+.frame{background:var(--paper);border-radius:20px;overflow:hidden;width:1280px;margin-bottom:48px}
+
+/* 사진 자리: 필름 카메라로 흐리게 찍은 듯한 색 덩어리 + 입자 */
+.ph{position:relative;overflow:hidden;border-radius:14px}
+.ph::after{content:'';position:absolute;inset:0;opacity:.18;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.p1{background:radial-gradient(60% 50% at 30% 70%,#C89B6D 0,transparent 70%),radial-gradient(50% 60% at 75% 30%,#F4E9DA 0,transparent 70%),linear-gradient(160deg,#5B3A26,#2E2019)}
+.p2{background:radial-gradient(55% 45% at 60% 60%,#E9DCC8 0,transparent 70%),radial-gradient(40% 40% at 25% 25%,#9DB08A 0,transparent 70%),linear-gradient(200deg,#C7B49A,#7A6A55)}
+.p3{background:radial-gradient(50% 50% at 50% 40%,#F6EFE6 0,transparent 65%),radial-gradient(45% 45% at 80% 85%,#B98A5E 0,transparent 70%),linear-gradient(180deg,#D8CBBB,#A48E77)}
+.p4{background:radial-gradient(45% 55% at 35% 45%,#D96F4A 0,transparent 70%),radial-gradient(50% 40% at 70% 75%,#F1D3A8 0,transparent 70%),linear-gradient(170deg,#4A2E22,#8C5638)}
+.p5{background:radial-gradient(55% 55% at 65% 35%,#EFE7DC 0,transparent 70%),radial-gradient(40% 50% at 20% 80%,#6E7F63 0,transparent 70%),linear-gradient(140deg,#B8AC98,#5E5648)}
+.p6{background:radial-gradient(50% 45% at 40% 55%,#FBF6EE 0,transparent 70%),radial-gradient(45% 45% at 80% 20%,#C9A27A 0,transparent 70%),linear-gradient(190deg,#E4D6C3,#B79C7E)}
+
+/* 큰 별점 숫자: 이 시안에서 유일하게 힘을 준 곳 */
+.score{font-family:var(--display);font-weight:800;line-height:.82;letter-spacing:-0.05em;color:#fff}
+
+/* 상단 바 */
+.top{display:flex;align-items:center;gap:28px;padding:22px 48px}
+.logo{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-0.04em}
+.search{flex:1;max-width:460px;margin:0 auto;background:var(--oat);border-radius:999px;padding:12px 20px;font-size:15px;color:var(--mute)}
+.menu{display:flex;gap:24px;font-size:15px;color:var(--mute)}
+.menu b{color:var(--ink);font-weight:700}
+.me{width:34px;height:34px;border-radius:50%;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+
+/* 홈 히어로 */
+.hero{display:grid;grid-template-columns:5fr 7fr;gap:40px;padding:28px 48px 56px;align-items:end}
+.hero h1{font-size:64px;font-weight:800;line-height:1.08;letter-spacing:-0.05em}
+.hero p{margin-top:18px;font-size:17px;color:var(--mute);line-height:1.6}
+.areas{display:flex;gap:8px;margin-top:28px;flex-wrap:wrap}
+.areas span{padding:10px 18px;border-radius:999px;border:1.5px solid var(--ink);font-size:15px;font-weight:600}
+.areas span.on{background:var(--ink);color:#fff}
+.feature{height:440px;display:flex;align-items:flex-end;justify-content:space-between;padding:32px;color:#fff}
+.feature .score{font-size:168px}
+.feature .who{text-align:right}
+.feature .who strong{display:block;font-size:30px;font-weight:800;letter-spacing:-0.04em}
+.feature .who span{font-size:15px;opacity:.85}
+
+/* 카드 줄 */
+.sec{padding:0 48px 56px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+.sec-head h2{font-size:26px;font-weight:800;letter-spacing:-0.04em}
+.sec-head a{font-size:14px;color:var(--mute)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card .ph{aspect-ratio:4/5;display:flex;align-items:flex-end;padding:16px}
+.card .score{font-size:56px}
+.card h3{margin-top:12px;font-size:17px;font-weight:700}
+.card p{margin-top:3px;font-size:14px;color:var(--mute)}
+.nr{color:rgba(255,255,255,.75);font-size:15px;font-weight:600}
+
+/* 상세 */
+.d-hero{position:relative;height:360px;margin:0 48px;display:flex;align-items:flex-end;padding:36px;color:#fff}
+.d-hero .score{font-size:200px;position:absolute;right:36px;bottom:24px}
+.d-hero h1{font-size:52px;font-weight:800;letter-spacing:-0.05em;line-height:1}
+.d-hero p{margin-top:10px;font-size:16px;opacity:.9}
+.d-body{display:grid;grid-template-columns:7fr 4fr;gap:48px;padding:36px 48px 56px}
+.rate{display:flex;align-items:center;gap:20px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+.stars{font-size:40px;letter-spacing:2px;color:var(--line);line-height:1}
+.stars i{font-style:normal;color:var(--brown)}
+.rate .hint{font-size:15px;color:var(--mute)}
+.btns{display:flex;gap:8px;margin-left:auto}
+.btn{padding:12px 18px;border-radius:999px;background:var(--oat);font-size:14px;font-weight:700}
+.btn.dark{background:var(--ink);color:#fff}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+.tags span{font-size:15px;font-weight:600;padding:8px 14px;border-radius:999px;background:var(--oat)}
+.tags span em{font-style:normal;color:var(--mute);font-weight:500;margin-left:6px}
+.reviews h2{font-size:22px;font-weight:800;margin:36px 0 8px;letter-spacing:-0.04em}
+.rv{display:grid;grid-template-columns:44px 1fr auto;gap:14px;padding:20px 0;border-bottom:1px solid var(--line)}
+.av{width:44px;height:44px;border-radius:50%;background:var(--oat);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brown)}
+.rv strong{font-size:15px}
+.rv p{margin-top:4px;font-size:16px;line-height:1.55}
+.rv .shots{display:flex;gap:6px;margin-top:10px}
+.rv .shots .ph{width:84px;height:84px;border-radius:10px}
+.rv .mini{font-family:var(--display);font-weight:800;font-size:28px;color:var(--brown);letter-spacing:-0.04em}
+.side .map{height:260px;border-radius:14px;background:
+  linear-gradient(0deg,transparent 48%,#fff 48% 52%,transparent 52%),
+  linear-gradient(90deg,transparent 30%,#fff 30% 33%,transparent 33%),
+  linear-gradient(35deg,transparent 60%,#fff 60% 62%,transparent 62%),var(--oat);position:relative}
+.side .pin{position:absolute;left:56%;top:44%;width:18px;height:18px;border-radius:50%;background:var(--brown);box-shadow:0 0 0 6px rgba(107,63,36,.2)}
+.side dl{margin-top:20px;font-size:15px;display:grid;grid-template-columns:72px 1fr;row-gap:10px}
+.side dt{color:var(--mute)}
+.near{margin-top:28px}
+.near h3{font-size:17px;font-weight:800;margin-bottom:12px}
+.near div{display:flex;gap:12px;align-items:center;padding:8px 0}
+.near .ph{width:52px;height:52px;border-radius:10px;flex:none}
+.near b{font-family:var(--display);font-weight:800;color:var(--brown);margin-left:auto;font-size:18px}
+.near small{display:block;color:var(--mute);font-size:13px}
+
+/* 모바일 */
+.phones{display:flex;gap:32px}
+.phone{width:390px;background:var(--paper);border-radius:36px;overflow:hidden;position:relative;height:844px}
+.phone .top{padding:20px}
+.phone .logo{font-size:22px}
+.m-hero{padding:4px 20px 0}
+.m-hero h1{font-size:34px;font-weight:800;line-height:1.12;letter-spacing:-0.05em}
+.m-hero .areas{margin-top:16px;flex-wrap:nowrap;overflow:hidden}
+.m-hero .areas span{padding:8px 14px;font-size:14px;white-space:nowrap}
+.m-feature{margin:20px;height:300px;display:flex;align-items:flex-end;justify-content:space-between;padding:20px;color:#fff}
+.m-feature .score{font-size:112px}
+.m-feature strong{font-size:20px;font-weight:800;display:block;text-align:right}
+.m-feature span{font-size:13px;opacity:.85}
+.m-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 20px}
+.m-row .ph{aspect-ratio:4/5;display:flex;align-items:flex-end;padding:12px}
+.m-row .score{font-size:40px}
+.m-row h3{font-size:15px;font-weight:700;margin-top:8px}
+.tabbar{position:absolute;left:12px;right:12px;bottom:16px;background:var(--ink);border-radius:999px;display:flex;justify-content:space-around;padding:16px 0;color:rgba(255,255,255,.55);font-size:13px;font-weight:600}
+.tabbar b{color:#fff}
+</style>
+</head>
+<body>
+
+<p class="cap">홈 (데스크톱)</p>
+<div class="frame">
+  <div class="top">
+    <span class="logo">cafepedia</span>
+    <span class="search">어디 가고 싶어요? 카페, 식당, 동네</span>
+    <nav class="menu"><b>홈</b><span>내 주변</span><span>캘린더</span><span>나의 기록</span></nav>
+    <span class="me">유</span>
+  </div>
+  <section class="hero">
+    <div>
+      <h1>밥 먹고,<br>카페 가고,<br>별점 남기고.</h1>
+      <p>다녀온 카페와 식당을 기록하면<br>취향이 비슷한 사람들의 단골집이 보여요.</p>
+      <div class="areas"><span class="on">성수</span><span>망원</span><span>연남</span><span>익선</span><span>한남</span></div>
+    </div>
+    <div class="ph p1 feature">
+      <span class="score">4.6</span>
+      <div class="who"><strong>카페 온기</strong><span>이번 주 성수에서 가장 많이 평가됐어요</span></div>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="sec-head"><h2>요즘 성수에서 많이 가는 곳</h2><a href="#">전체 보기</a></div>
+    <div class="cards">
+      <div class="card"><div class="ph p2"><span class="score">4.4</span></div><h3>오후세시 베이크</h3><p>디저트 맛집, 조용함</p></div>
+      <div class="card"><div class="ph p4"><span class="score">4.5</span></div><h3>성수 국밥집</h3><p>혼밥하기 좋음, 양 많음</p></div>
+      <div class="card"><div class="ph p3"><span class="score">4.3</span></div><h3>책방 커피</h3><p>작업하기 좋음, 콘센트 많음</p></div>
+      <div class="card"><div class="ph p5"><span class="nr">아직 평가 없음</span></div><h3>숲속 로스터스</h3><p>커피전문점</p></div>
+    </div>
+  </section>
+</div>
+
+<p class="cap">장소 상세 (데스크톱)</p>
+<div class="frame">
+  <div class="top">
+    <span class="logo">cafepedia</span>
+    <span class="search">어디 가고 싶어요? 카페, 식당, 동네</span>
+    <nav class="menu"><span>홈</span><span>내 주변</span><span>캘린더</span><span>나의 기록</span></nav>
+    <span class="me">유</span>
+  </div>
+  <div class="ph p1 d-hero">
+    <div><h1>카페 온기</h1><p>성동구 연무장길, 디저트카페</p></div>
+    <span class="score">4.6</span>
+  </div>
+  <div class="d-body">
+    <div>
+      <div class="rate">
+        <div>
+          <div class="stars"><i>★★★★</i>★</div>
+          <div class="hint">128명이 평가했어요</div>
+        </div>
+        <div class="btns"><span class="btn">가고 싶어요</span><span class="btn dark">한 줄 평 쓰기</span></div>
+      </div>
+      <div class="tags">
+        <span>디저트 맛집<em>42</em></span><span>조용함<em>31</em></span><span>작업하기 좋음<em>18</em></span>
+      </div>
+      <div class="reviews">
+        <h2>한 줄 평 42</h2>
+        <div class="rv">
+          <span class="av">민</span>
+          <div><strong>민지</strong><p>바스크 치즈케이크 때문에 또 갈 것 같아요. 창가 자리는 오후 3시 이후 추천.</p>
+            <div class="shots"><span class="ph p6"></span><span class="ph p2"></span></div></div>
+          <span class="mini">5.0</span>
+        </div>
+        <div class="rv">
+          <span class="av">카</span>
+          <div><strong>카공러</strong><p>콘센트 많고 음악이 작아서 오래 있기 좋아요.</p></div>
+          <span class="mini">4.0</span>
+        </div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="map"><span class="pin"></span></div>
+      <dl><dt>주소</dt><dd>서울 성동구 연무장길 12</dd><dt>영업</dt><dd>매일 11:00 – 22:00</dd><dt>방문</dt><dd>11월 7일에 다녀왔어요</dd></dl>
+      <div class="near">
+        <h3>여기서 밥 먹고 가기</h3>
+        <div><span class="ph p4"></span><span>성수 국밥집<small>도보 4분</small></span><b>4.5</b></div>
+        <div><span class="ph p6"></span><span>파스타 공방<small>도보 6분</small></span><b>4.2</b></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<p class="cap">모바일</p>
+<div class="phones">
+  <div class="phone">
+    <div class="top"><span class="logo">cafepedia</span><span class="me" style="margin-left:auto">유</span></div>
+    <div class="m-hero">
+      <h1>밥 먹고, 카페 가고,<br>별점 남기고.</h1>
+      <div class="areas"><span class="on">성수</span><span>망원</span><span>연남</span><span>익선</span></div>
+    </div>
+    <div class="ph p1 m-feature"><span class="score">4.6</span><div><strong>카페 온기</strong><span>이번 주 성수 1위</span></div></div>
+    <div class="m-row">
+      <div><div class="ph p2"><span class="score">4.4</span></div><h3>오후세시 베이크</h3></div>
+      <div><div class="ph p4"><span class="score">4.5</span></div><h3>성수 국밥집</h3></div>
+    </div>
+    <nav class="tabbar"><b>홈</b><span>검색</span><span>내 주변</span><span>캘린더</span><span>나</span></nav>
+  </div>
+  <div class="phone">
+    <div class="ph p1" style="border-radius:0;height:300px;display:flex;align-items:flex-end;justify-content:space-between;padding:20px;color:#fff">
+      <div><h1 style="font-size:32px;font-weight:800;letter-spacing:-0.05em">카페 온기</h1><p style="font-size:14px;opacity:.9;margin-top:4px">성동구, 디저트카페</p></div>
+      <span class="score" style="font-size:96px">4.6</span>
+    </div>
+    <div style="padding:20px">
+      <div class="stars" style="font-size:36px"><i>★★★★</i>★</div>
+      <div class="hint" style="font-size:14px;color:var(--mute);margin-top:4px">128명이 평가했어요</div>
+      <div class="tags" style="margin-top:16px"><span>디저트 맛집<em>42</em></span><span>조용함<em>31</em></span></div>
+      <div class="btns" style="margin:20px 0 0"><span class="btn" style="flex:1;text-align:center">가고 싶어요</span><span class="btn dark" style="flex:1;text-align:center">한 줄 평 쓰기</span></div>
+      <div class="rv" style="grid-template-columns:36px 1fr auto;margin-top:12px"><span class="av" style="width:36px;height:36px">민</span><div><strong>민지</strong><p style="font-size:15px">바스크 치즈케이크 때문에 또 갈 것 같아요.</p></div><span class="mini" style="font-size:22px">5.0</span></div>
+    </div>
+    <nav class="tabbar"><span>홈</span><b>검색</b><span>내 주변</span><span>캘린더</span><span>나</span></nav>
+  </div>
+</div>
+
+</body>
+</html>

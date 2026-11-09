@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Place, Review, User, Wishlist
+from .models import Place, Review, ReviewPhoto, User, Wishlist
 
 
 @admin.register(User)
@@ -29,3 +29,8 @@ class ReviewAdmin(admin.ModelAdmin):
 @admin.register(Wishlist)
 class WishlistAdmin(admin.ModelAdmin):
     list_display = ['user', 'place', 'created_at']
+
+
+@admin.register(ReviewPhoto)
+class ReviewPhotoAdmin(admin.ModelAdmin):
+    list_display = ['review', 'image', 'created_at']

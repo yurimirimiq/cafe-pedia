@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
 import Calendar from './pages/Calendar'
 import Home from './pages/Home'
@@ -16,6 +16,22 @@ function RequireAuth({ children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+// 상단 검색창: 엔터를 치면 검색 페이지로
+function NavSearch() {
+  const navigate = useNavigate()
+  function onSubmit(e) {
+    e.preventDefault()
+    const q = e.target.q.value.trim()
+    if (q) navigate(`/search?q=${encodeURIComponent(q)}`)
+  }
+  return (
+    <form className="nav-search" role="search" onSubmit={onSubmit}>
+      <label className="sr-only" htmlFor="nav-q">검색어</label>
+      <input id="nav-q" name="q" type="search" placeholder="어디 가고 싶어요? 카페, 식당, 동네" />
+    </form>
+  )
+}
+
 function Layout() {
   const { user, ready, logout } = useAuth()
   // 저장된 토큰을 확인하는 동안 화면이 깜빡이지 않게 잠깐 기다린다
@@ -25,10 +41,11 @@ function Layout() {
     <>
       <header className="nav">
         <Link to="/" className="logo">cafepedia</Link>
-        {/* 넓은 화면: 상단 메뉴 / 좁은 화면: CSS 로 하단 탭 바가 된다 */}
+        <NavSearch />
+        {/* 넓은 화면: 상단 메뉴 / 좁은 화면: CSS 로 화면 아래 떠 있는 탭 바가 된다 */}
         <nav className="menu">
           <NavLink to="/" end>홈</NavLink>
-          <NavLink to="/search">검색</NavLink>
+          <NavLink to="/search" className="mobile-only">검색</NavLink>
           <NavLink to="/nearby">내 주변</NavLink>
           <NavLink to="/calendar">캘린더</NavLink>
           <NavLink to="/me">나의 기록</NavLink>
@@ -36,13 +53,13 @@ function Layout() {
         <div className="nav-right">
           {user ? (
             <>
-              <span className="avatar" title={user.nickname}>{user.nickname[0]}</span>
-              <button className="link" onClick={logout}>로그아웃</button>
+              <Link to="/me" className="avatar" title={`${user.nickname} (나의 기록)`}>{user.nickname[0]}</Link>
+              <button className="link small" onClick={logout}>로그아웃</button>
             </>
           ) : (
             <>
               <Link to="/login" className="muted">로그인</Link>
-              <Link to="/signup" className="btn primary small">회원가입</Link>
+              <Link to="/signup" className="btn dark small">회원가입</Link>
             </>
           )}
         </div>

@@ -80,12 +80,12 @@
 
 ## 디자인 방향
 
-![카페피디아 데스크톱 시안 (홈, 검색, 장소 상세, 캘린더, 나의 기록, 모바일 폭)](docs/mockup.png)
+![카페피디아 시안 v2 (홈, 장소 상세, 모바일)](docs/mockup-v2.png)
 
-> 시안 원본: [docs/mockup.html](docs/mockup.html) — 장소 이름·리뷰·숫자는 모두 예시 데이터
+> 시안 원본: [docs/mockup-v2.html](docs/mockup-v2.html) — 사진이 주인공, 사진 위 큰 별점 숫자가 브랜드. 장소 이름·리뷰·숫자는 예시. 이전 시안: [docs/mockup.html](docs/mockup.html)
 
 - **데스크톱 웹 우선** — 웹사이트로 먼저 배포. 화면이 좁아지면 카드 수가 줄어드는 반응형 처리는 함께 한다
-- **글꼴**: Pretendard (로고·평균 별점 숫자는 굵게, 자간 살짝 좁게)
+- **글꼴**: 본문 Pretendard, 로고와 별점 숫자만 Bricolage Grotesque
 - **색**: 화이트톤 + 갈색 포인트 하나
 
   | 이름 | 색 | 용도 |

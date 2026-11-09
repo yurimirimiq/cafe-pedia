@@ -35,16 +35,20 @@ async function refreshAccess() {
   return true
 }
 
+// 서버가 준 사진 주소가 "/media/..." 처럼 상대 경로면 백엔드 주소를 붙인다
+export const mediaUrl = (url) => (url?.startsWith('/') ? `${API_URL}${url}` : url)
+
 // 모든 API 호출은 이 함수를 쓴다: 토큰을 붙이고, access 가 만료됐으면 한 번 새로 받아 다시 시도한다
 export async function apiFetch(path, { method = 'GET', body } = {}) {
   const send = () =>
     fetch(`${API_URL}${path}`, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        // 사진(FormData)은 브라우저가 Content-Type 을 직접 정한다
+        ...(!(body instanceof FormData) && { 'Content-Type': 'application/json' }),
         ...(tokens.access && { Authorization: `Bearer ${tokens.access}` }),
       },
-      body: body && JSON.stringify(body),
+      body: body instanceof FormData ? body : body && JSON.stringify(body),
     })
 
   let res = await send()

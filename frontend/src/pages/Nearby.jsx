@@ -89,13 +89,13 @@ export default function Nearby() {
           {sorted.map((p) => (
             <li key={p.id}>
               <Link to={`/place/${p.id}`} className="result">
-                <Poster place={p} size={64} />
+                <Poster place={p} className="list-photo" />
                 <div className="result-body">
                   <strong>{p.name}</strong>
                   <span className="muted">{meters(p.distance)} · {[p.category_label, ...keywords(p, 2)].filter((v, i, a) => a.indexOf(v) === i).join(' · ')}</span>
                   <span className="muted small">{p.address}</span>
                 </div>
-                <span className="rating">{p.review_count ? `★ ${p.avg_rating}` : '평가 없음'}</span>
+                {p.review_count ? <span className="rating">{p.avg_rating}</span> : <span className="muted small">평가 없음</span>}
               </Link>
             </li>
           ))}

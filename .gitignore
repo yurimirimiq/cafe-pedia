@@ -7,3 +7,6 @@ __pycache__/
 
 # Django 개발용 DB
 db.sqlite3
+
+# 사용자가 올린 사진
+backend/media/
