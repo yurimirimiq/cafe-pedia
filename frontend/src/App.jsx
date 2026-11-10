@@ -95,7 +95,7 @@ function Layout() {
   return (
     <>
       <header className="nav">
-        <Link to="/" className="logo">cafepedia</Link>
+        <Link to="/" className="logo"><img src="/logo.svg" alt="" width="34" height="34" />cafepedia</Link>
         <NavSearch />
         {/* 넓은 화면: 상단 메뉴 / 좁은 화면: CSS 로 화면 아래 떠 있는 탭 바가 된다 */}
         <nav className="menu">

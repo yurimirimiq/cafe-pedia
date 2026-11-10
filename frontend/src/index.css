@@ -37,11 +37,14 @@ a { color: inherit; text-decoration: none; }
 .chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 
 /* 큰 별점 숫자 — 이 디자인에서 유일하게 힘을 준 곳 */
-.score { font-family: var(--display); font-weight: 800; line-height: 0.82; letter-spacing: -0.05em; color: #fff; }
+/* 자간은 -0.02em 까지만: Bricolage 의 숫자·소수점 사이 여백이 글자 크기의 약 4% 라 더 당기면 "4.5"의 점이 숫자와 붙는다 */
+.score { font-family: var(--display); font-weight: 800; line-height: 0.82; letter-spacing: -0.02em; color: #fff; }
 
 /* 상단 바 */
 .nav { display: flex; align-items: center; gap: 28px; padding: 20px 48px; white-space: nowrap; }
-.logo { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.04em; }
+/* 로고: 진한 갈색 지도 핀 아이콘(public/logo.svg, 파비콘과 같은 파일) + 글자 */
+.logo { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.04em; }
+.logo img { display: block; flex: none; }
 .nav-search { flex: 1; max-width: 440px; margin: 0 auto; }
 .nav-search input { width: 100%; border: 0; border-radius: 999px; background: var(--oat); padding: 12px 20px; font: inherit; font-size: 15px; color: var(--ink); }
 .nav-search input::placeholder { color: var(--mute); }
@@ -141,7 +144,7 @@ a { color: inherit; text-decoration: none; }
 .rv p.small { font-size: 13px; }
 .shots { display: flex; gap: 6px; margin-top: 10px; }
 .shots img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; display: block; }
-.mini { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--brown); letter-spacing: -0.04em; }
+.mini { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--brown); letter-spacing: -0.02em; }
 .side .map { height: 260px; border-radius: 14px; background: var(--oat); }
 .map-empty { display: flex; align-items: center; justify-content: center; color: var(--mute); }
 .map-link { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--ink); }
@@ -183,7 +186,7 @@ a { color: inherit; text-decoration: none; }
 .result-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .result-body strong { font-size: 17px; }
 .result-body .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rating { font-family: var(--display); font-size: 22px; font-weight: 800; color: var(--brown); white-space: nowrap; letter-spacing: -0.03em; }
+.rating { font-family: var(--display); font-size: 22px; font-weight: 800; color: var(--brown); white-space: nowrap; letter-spacing: -0.02em; }
 .locate { background: var(--oat); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; }
 .filters .chips { margin: 0 0 12px; }
@@ -304,7 +307,7 @@ a { color: inherit; text-decoration: none; }
 .reviews .seg { margin-bottom: 8px; }
 .seg em { font-style: normal; font-weight: 500; color: var(--mute); margin-left: 2px; }
 .verified-sum { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; padding: 18px 20px; border-radius: 14px; background: var(--okbg); color: var(--ok); margin: 12px 0 4px; }
-.verified-sum b { font-family: var(--display); font-size: 40px; letter-spacing: -0.04em; }
+.verified-sum b { font-family: var(--display); font-size: 40px; letter-spacing: -0.02em; }
 .verified-sum span { font-size: 14px; }
 .verified-sum .vs { margin-left: auto; color: var(--mute); }
 .reviews .empty { padding: 20px 0; }
@@ -328,7 +331,7 @@ a { color: inherit; text-decoration: none; }
 
 /* 취향 추천 · 취향 분석 · 팔로우 (시안: docs/mockup-taste.html) */
 /* 예상 별점은 속이 빈 숫자: 가서 별점을 남기면 꽉 찬 숫자(.score)로 바뀐다 */
-.guess { font-family: var(--display); font-weight: 800; line-height: 0.82; letter-spacing: -0.03em; color: transparent; -webkit-text-stroke: 2px #fff; filter: drop-shadow(0 1px 10px rgba(34, 26, 21, 0.35)); }
+.guess { font-family: var(--display); font-weight: 800; line-height: 0.82; letter-spacing: -0.02em; color: transparent; -webkit-text-stroke: 2px #fff; filter: drop-shadow(0 1px 10px rgba(34, 26, 21, 0.35)); }
 .card .guess { font-size: 56px; }
 .card-photo { justify-content: space-between; }
 .card-avg { color: #fff; font-size: 13px; font-weight: 600; text-align: right; line-height: 1.35; opacity: 0.92; }
