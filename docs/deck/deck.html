@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카페피디아 피치덱</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap">
+<style>
+:root{--paper:#fff;--ink:#221A15;--brown:#6B3F24;--oat:#F2EDE7;--line:#E3DAD0;--mute:#8A7F77;--crema:#C8A27C;--display:'Bricolage Grotesque',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D2CA;font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.02em;word-break:keep-all;-webkit-font-smoothing:antialiased}
+
+/* 한 장 = 1600×900. #3 처럼 해시를 주면 그 장만 보여준다 (PNG 뽑을 때) */
+.slide{width:1600px;height:900px;background:var(--paper);position:relative;overflow:hidden;padding:96px 112px;margin:40px auto;display:flex;flex-direction:column}
+body.one{background:var(--paper)}
+body.one .slide{margin:0;display:none}
+body.one .slide.show{display:flex}
+
+.dark{background:var(--ink);color:#fff}
+.logo{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-0.04em}
+.page{position:absolute;right:112px;bottom:56px;font-family:var(--display);font-weight:500;font-size:18px;color:var(--mute)}
+.dark .page{color:rgba(255,255,255,.45)}
+
+h1{font-size:64px;line-height:1.12;font-weight:800;letter-spacing:-0.045em}
+h2{font-size:52px;line-height:1.18;font-weight:800;letter-spacing:-0.045em;max-width:1100px}
+.lead{font-size:24px;line-height:1.6;color:var(--mute);margin-top:20px;max-width:900px}
+.dark .lead{color:rgba(255,255,255,.6)}
+
+/* 브랜드: 사진 위의 큰 별점 숫자. 예상 별점은 속이 빈 숫자 */
+.num{font-family:var(--display);font-weight:800;letter-spacing:-0.06em;line-height:.8}
+.num.hollow{color:transparent;-webkit-text-stroke:3px var(--brown);letter-spacing:0}
+.poster{border-radius:24px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:28px;color:#fff}
+.p1{background:radial-gradient(60% 50% at 30% 70%,#C89B6D 0,transparent 70%),radial-gradient(50% 60% at 75% 30%,#F4E9DA 0,transparent 70%),linear-gradient(160deg,#5B3A26,#2E2019)}
+.p4{background:radial-gradient(45% 55% at 35% 45%,#D96F4A 0,transparent 70%),radial-gradient(50% 40% at 70% 75%,#F1D3A8 0,transparent 70%),linear-gradient(170deg,#4A2E22,#8C5638)}
+.p5{background:radial-gradient(55% 55% at 65% 35%,#EFE7DC 0,transparent 70%),radial-gradient(40% 50% at 20% 80%,#6E7F63 0,transparent 70%),linear-gradient(140deg,#B8AC98,#5E5648)}
+.p6{background:radial-gradient(50% 45% at 40% 55%,#FBF6EE 0,transparent 70%),radial-gradient(45% 45% at 80% 20%,#C9A27A 0,transparent 70%),linear-gradient(190deg,#E4D6C3,#B79C7E)}
+
+.chip{display:inline-flex;align-items:center;height:40px;padding:0 18px;border-radius:999px;background:var(--oat);font-size:18px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--brown);flex:none}
+
+/* 1. 표지 */
+.cover .posters{position:absolute;right:112px;top:96px;bottom:96px;width:620px}
+.cover .posters .poster{position:absolute}
+.cover .a{left:0;top:60px;width:380px;height:500px}
+.cover .a .num{font-size:150px}
+.cover .b{right:0;top:220px;width:300px;height:400px}
+.cover .b .num{font-size:110px}
+.cover .tag{position:absolute;left:44px;top:600px;font-size:20px;color:rgba(255,255,255,.55);line-height:1.6}
+.cover h1{font-size:92px;line-height:1.08;margin-top:auto}
+.cover .lead{margin-top:28px;font-size:26px}
+
+/* 2. 문제 */
+.same{display:flex;gap:20px;margin-top:64px}
+.same div{flex:1;height:250px;border-radius:20px;background:var(--oat);display:flex;flex-direction:column;justify-content:space-between;padding:28px}
+.same .num{font-size:96px;color:var(--mute)}
+.same span{font-size:18px;color:var(--mute);font-weight:600}
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-top:auto}
+.pains b{display:block;font-size:26px;font-weight:800;margin-bottom:10px}
+.pains p{font-size:20px;line-height:1.6;color:var(--mute)}
+
+/* 3. 해결 */
+.verbs{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:auto}
+.verb{border-radius:24px;background:var(--oat);padding:40px 36px;height:420px;display:flex;flex-direction:column}
+.verb .num{font-size:110px;color:var(--brown);margin-bottom:auto}
+.verb b{font-size:34px;font-weight:800;letter-spacing:-0.04em}
+.verb p{font-size:20px;line-height:1.6;color:var(--mute);margin-top:12px}
+.verb.ink{background:var(--ink);color:#fff}
+.verb.ink .num.hollow{-webkit-text-stroke-color:var(--crema)}
+.verb.ink p{color:rgba(255,255,255,.6)}
+.minis{display:flex;gap:8px;margin-bottom:auto;height:110px}
+.minis div{width:80px;border-radius:14px}
+
+/* 4. 화면 */
+.product{flex-direction:row;gap:72px;align-items:center}
+.product .text{width:440px;flex:none}
+.screen{flex:1;height:708px;border-radius:24px;background:url(../mockup-v2.png) no-repeat;background-size:1260px auto;background-position:-48px -74px;box-shadow:0 30px 80px rgba(34,26,21,.18);border:1px solid var(--line)}
+.menus{display:flex;flex-direction:column;gap:18px;margin-top:48px}
+.menus div{display:flex;gap:16px;align-items:baseline;font-size:21px}
+.menus b{width:110px;flex:none;font-weight:800}
+.menus span{color:var(--mute)}
+
+/* 5. 예상 별점 */
+.guess{flex-direction:row;gap:96px}
+.guess .left{width:560px;flex:none;display:flex;flex-direction:column}
+.guess .big{font-size:280px;margin-top:auto}
+.guess .cap{font-size:22px;color:var(--mute);margin-top:32px;line-height:1.6}
+.guess .cap b{color:var(--ink)}
+.guess .right{flex:1;display:flex;flex-direction:column}
+.steps{display:flex;flex-direction:column;margin-top:auto;border-top:1px solid var(--line)}
+.step{display:flex;gap:28px;padding:30px 0;border-bottom:1px solid var(--line)}
+.step i{font-style:normal;font-family:var(--display);font-weight:800;font-size:28px;color:var(--brown);width:36px;flex:none}
+.step b{display:block;font-size:26px;font-weight:800;margin-bottom:8px}
+.step p{font-size:19px;line-height:1.6;color:var(--mute)}
+
+/* 6. 믿을 수 있는 별점 */
+.trust{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:auto}
+.card{border-radius:24px;border:1px solid var(--line);padding:40px;height:500px;display:flex;flex-direction:column}
+.card h3{font-size:30px;font-weight:800;letter-spacing:-0.04em}
+.card .sub{font-size:19px;color:var(--mute);line-height:1.6;margin-top:10px}
+.badge{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:var(--brown);color:#fff;font-size:17px;font-weight:700}
+.versus{display:flex;gap:20px;margin-top:auto}
+.versus>div{flex:1;border-radius:18px;background:var(--oat);padding:26px}
+.versus .num{font-size:80px}
+.versus span{display:block;font-size:17px;color:var(--mute);margin-top:14px;font-weight:600}
+.versus .ink{background:var(--ink)}
+.versus .ink .num{color:var(--crema)}
+.versus .ink span{color:rgba(255,255,255,.6)}
+.formula{margin-top:36px;font-family:var(--display);font-weight:500;font-size:25px;background:var(--oat);border-radius:18px;padding:22px 24px;letter-spacing:-0.02em}
+.ranks{display:flex;flex-direction:column;gap:14px;margin-top:auto}
+.ranks div{display:flex;align-items:center;gap:18px;font-size:20px}
+.ranks .num{font-size:36px;width:44px}
+.ranks em{font-style:normal;color:var(--mute);font-size:17px;margin-left:auto}
+.ranks .low{color:var(--mute)}
+
+/* 7. 함께 */
+.together{flex-direction:row;gap:80px}
+.together .text{width:560px;flex:none;display:flex;flex-direction:column}
+.coll{margin-top:auto;border-radius:24px;overflow:hidden;border:1px solid var(--line)}
+.coll .covers{display:grid;grid-template-columns:2fr 1fr 1fr;height:200px;gap:3px}
+.coll .body{padding:22px 26px}
+.coll b{font-size:24px;font-weight:800}
+.coll p{font-size:17px;color:var(--mute);margin-top:6px}
+.loop{flex:1;position:relative}
+.loop svg{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;width:230px;text-align:center;transform:translate(-50%,-50%);background:var(--paper);padding:10px 0}
+.node b{display:block;font-size:26px;font-weight:800}
+.node span{display:block;font-size:18px;color:var(--mute);margin-top:6px;line-height:1.5}
+.hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;border-radius:50%;background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;font-weight:700}
+.hub .num{font-size:64px;color:var(--crema);margin-bottom:12px}
+
+/* 8. 누구를 위해 */
+.people{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:auto}
+.person .poster{height:420px;flex-direction:column;align-items:flex-start;justify-content:space-between}
+.person .poster q{font-size:32px;font-weight:800;line-height:1.35;letter-spacing:-0.04em;quotes:none}
+.person .poster span{font-size:19px;opacity:.85;font-weight:600}
+.person .p6{color:var(--ink)}
+.person ul{list-style:none;margin-top:22px;display:flex;flex-direction:column;gap:10px}
+.person li{display:flex;gap:12px;align-items:center;font-size:20px}
+
+/* 9. 기술 */
+.tech{flex-direction:row;gap:80px}
+.tech .text{width:500px;flex:none;display:flex;flex-direction:column}
+.facts{margin-top:auto;display:flex;flex-direction:column;gap:28px}
+.facts div{display:flex;align-items:baseline;gap:20px}
+.facts .num{font-size:76px;color:var(--brown);width:150px;flex:none;line-height:1}
+.facts p{font-size:20px;line-height:1.5;color:var(--mute)}
+.facts p b{display:block;color:var(--ink);font-size:23px}
+.arch{flex:1;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.box{border-radius:20px;border:1.5px solid var(--line);padding:24px 28px;display:flex;justify-content:space-between;align-items:center}
+.box b{font-size:25px;font-weight:800}
+.box span{font-size:18px;color:var(--mute)}
+.box.ink{background:var(--ink);border-color:var(--ink);color:#fff}
+.box.ink span{color:rgba(255,255,255,.6)}
+.box.oat{background:var(--oat);border-color:var(--oat);flex:1}
+.pair{display:flex;gap:18px}
+.arrow{text-align:center;color:var(--crema);font-size:22px;line-height:1;margin:-6px 0}
+.apis{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+
+/* 10. 로드맵 */
+.road{display:grid;grid-template-columns:repeat(4,1fr);margin-top:auto;border-top:1.5px solid rgba(255,255,255,.18)}
+.road div{padding:30px 32px 0 0;position:relative}
+.road div::before{content:'';position:absolute;top:-8px;left:0;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.3)}
+.road div.now::before{background:var(--crema);box-shadow:0 0 0 6px rgba(200,162,124,.25)}
+.road i{font-style:normal;display:block;font-size:17px;color:rgba(255,255,255,.45);font-weight:600;margin-bottom:12px}
+.road b{display:block;font-size:28px;font-weight:800;letter-spacing:-0.04em}
+.road p{font-size:19px;line-height:1.6;color:rgba(255,255,255,.6);margin-top:10px}
+.end{display:flex;justify-content:space-between;align-items:flex-end;margin-top:72px}
+.end .num.hollow{font-size:180px;-webkit-text-stroke-color:var(--crema)}
+.end p{font-size:20px;color:rgba(255,255,255,.55);text-align:right;line-height:1.7}
+</style>
+</head>
+<body>
+
+<!-- 1. 표지 -->
+<section class="slide dark cover">
+  <div class="logo">cafepedia</div>
+  <div class="posters">
+    <div class="poster p1 a"><span class="num">4.6</span></div>
+    <div class="poster p4 b"><span class="num">4.5</span></div>
+    <p class="tag">카페 온기, 성수 국밥집<br>이번 주 가장 많이 평가된 곳</p>
+  </div>
+  <h1>밥 먹고,<br>카페 가고,<br>별점 남기고.</h1>
+  <p class="lead">다녀온 카페와 식당을 별점으로 기록하고,<br>취향이 비슷한 사람들의 별점으로 다음 갈 곳을 고르는 서비스</p>
+</section>
+
+<!-- 2. 문제 -->
+<section class="slide">
+  <h2>지도 앱의 별점은 다 4점대라서,<br>어디가 나한테 맞는지 모른다</h2>
+  <div class="same">
+    <div><span class="num">4.6</span><span>동네 카페 A</span></div>
+    <div><span class="num">4.5</span><span>동네 카페 B</span></div>
+    <div><span class="num">4.7</span><span>동네 카페 C</span></div>
+    <div><span class="num">4.6</span><span>동네 국밥 D</span></div>
+    <div><span class="num">4.5</span><span>동네 파스타 E</span></div>
+  </div>
+  <div class="pains">
+    <div><b>이벤트로 부푼 별점</b><p>음료 서비스를 받고 남긴 5점이 섞여서, 평균이 다 비슷해진다</p></div>
+    <div><b>내 취향과 무관한 평균</b><p>디저트를 좋아하는 사람과 조용한 자리를 찾는 사람의 4.5는 같은 뜻이 아니다</p></div>
+    <div><b>남지 않는 기록</b><p>다녀온 곳은 지도 즐겨찾기와 사진첩에 흩어지고, 내가 몇 점을 줬는지는 잊는다</p></div>
+  </div>
+  <span class="page">02 / 10</span>
+</section>
+
+<!-- 3. 해결 -->
+<section class="slide">
+  <h2>영화처럼, 카페와 식당에도 별점을</h2>
+  <p class="lead">영화 평가 서비스의 방식을 동네 가게에 가져왔어요. 내가 남긴 별점이 쌓일수록 추천이 나에게 맞춰져요.</p>
+  <div class="verbs">
+    <div class="verb"><span class="num">4.5</span><b>기록하기</b><p>0.5 단위 별점, 한 줄 평, 키워드, 사진. 다녀온 날은 캘린더에 사진으로 남아요</p></div>
+    <div class="verb ink"><span class="num hollow">4.3</span><b>고르기</b><p>안 가본 곳마다 나의 예상 별점. 랭킹과 내 주변에서 다음 갈 곳을 찾아요</p></div>
+    <div class="verb"><div class="minis"><div class="p6"></div><div class="p1"></div><div class="p5"></div></div><b>나누기</b><p>"카공하기 좋은 카페"처럼 장소를 묶은 컬렉션, 팔로우, 카카오톡 공유</p></div>
+  </div>
+  <span class="page">03 / 10</span>
+</section>
+
+<!-- 4. 화면 -->
+<section class="slide product">
+  <div class="text">
+    <h2>사진이 주인공,<br>숫자가 브랜드</h2>
+    <p class="lead">가게 사진 위에 큰 별점 숫자 하나. 목록을 훑기만 해도 어디가 좋은지 보여요.</p>
+    <div class="menus">
+      <div><b>홈</b><span>이번 주 많이 평가된 곳, 인기 컬렉션</span></div>
+      <div><b>검색</b><span>최근 본 장소, 좋아할 만한 곳</span></div>
+      <div><b>내 주변</b><span>500m ~ 3km, 가까운 순·별점 순</span></div>
+      <div><b>캘린더</b><span>다녀온 날마다 사진 한 장</span></div>
+      <div><b>나의 기록</b><span>별점 분포, 취향 분석, 팔로잉 소식</span></div>
+    </div>
+  </div>
+  <div class="screen" role="img" aria-label="카페피디아 홈 화면"></div>
+  <span class="page">04 / 10</span>
+</section>
+
+<!-- 5. 예상 별점 -->
+<section class="slide guess">
+  <div class="left">
+    <h2>안 가본 곳의<br>내 별점을 미리</h2>
+    <span class="num hollow big">4.3</span>
+    <p class="cap">속이 빈 숫자는 <b>예상 별점</b>이에요.<br>직접 별점을 남기면 꽉 찬 숫자로 바뀌어요.</p>
+  </div>
+  <div class="right">
+    <p class="lead" style="margin-top:8px">사용자 기반 협업 필터링.<br>"나와 취향이 비슷한 사람이 좋아한 곳은 나도 좋아할 것이다"</p>
+    <div class="steps">
+      <div class="step"><i>1</i><div><b>취향이 비슷한 사람 찾기</b><p>같이 평가한 곳이 3곳 이상인 사람끼리 피어슨 상관계수로 비교해요. 후하게 주는 사람과 짜게 주는 사람의 차이는 보정해요</p></div></div>
+      <div class="step"><i>2</i><div><b>그 사람들의 별점으로 예상</b><p>비슷한 정도만큼 가중 평균해요. 취향이 반대인 사람의 별점은 쓰지 않아요</p></div></div>
+      <div class="step"><i>3</i><div><b>3.5 이상만 추천</b><p>평가가 5개 미만이면 내가 좋아한 종류와 자주 가는 동네로 대신 골라요</p></div></div>
+    </div>
+  </div>
+  <span class="page">05 / 10</span>
+</section>
+
+<!-- 6. 믿을 수 있는 별점 -->
+<section class="slide">
+  <h2>믿을 수 있는 별점을 위한 두 가지 장치</h2>
+  <div class="trust">
+    <div class="card">
+      <span class="badge">✓ 영수증 인증</span>
+      <h3 style="margin-top:22px">진짜 다녀온 사람의 별점</h3>
+      <p class="sub">영수증을 찍으면 가게 이름과 결제일을 읽어 인증해요. 같은 영수증은 다시 못 쓰고, 사진은 저장하지 않아요.</p>
+      <div class="versus">
+        <div><span class="num">4.6</span><span>전체 평균 (예시)</span></div>
+        <div class="ink"><span class="num">4.2</span><span>영수증 인증 평균</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>별점 하나로 1등이 되지 않는 랭킹</h3>
+      <p class="sub">평가가 적은 곳은 전체 평균 쪽으로 당겨요 (베이지안 평균)</p>
+      <div class="formula">(별점 합 + 3 × 전체 평균) ÷ (평가 수 + 3)</div>
+      <div class="ranks">
+        <div><span class="num">1</span>꾸준히 4.5를 받은 곳<em>평가 24개</em></div>
+        <div class="low"><span class="num">7</span>한 명이 5.0을 준 곳<em>평가 1개</em></div>
+      </div>
+    </div>
+  </div>
+  <span class="page">06 / 10</span>
+</section>
+
+<!-- 7. 함께 -->
+<section class="slide together">
+  <div class="text">
+    <h2>혼자 쓰는 기록이<br>모두의 지도가 된다</h2>
+    <p class="lead">별점이 쌓일수록 예상 별점이 정확해지고, 컬렉션과 공유가 새 사람을 데려와요.</p>
+    <div class="coll">
+      <div class="covers"><div class="p6"></div><div class="p1"></div><div class="p5"></div></div>
+      <div class="body"><b>카공하기 좋은 카페</b><p>콘센트 많고 오래 앉아 있어도 눈치 안 보이는 곳 (컬렉션 예시)</p></div>
+    </div>
+  </div>
+  <div class="loop">
+    <svg viewBox="0 0 740 704" fill="none" aria-hidden="true">
+      <circle cx="370" cy="352" r="250" stroke="#C8A27C" stroke-width="2" stroke-dasharray="4 10"/>
+    </svg>
+    <div class="hub"><span class="num">★</span>별점 데이터</div>
+    <div class="node" style="left:50%;top:14%"><b>기록</b><span>별점, 한 줄 평, 키워드</span></div>
+    <div class="node" style="left:84%;top:50%"><b>추천</b><span>예상 별점이<br>더 정확해진다</span></div>
+    <div class="node" style="left:50%;top:86%"><b>나눔</b><span>컬렉션, 팔로우,<br>카카오톡 공유</span></div>
+    <div class="node" style="left:16%;top:50%"><b>새 사용자</b><span>공유 링크로 들어와<br>첫 별점</span></div>
+  </div>
+  <span class="page">07 / 10</span>
+</section>
+
+<!-- 8. 누구를 위해 -->
+<section class="slide">
+  <h2>이런 사람들이 씁니다</h2>
+  <div class="people">
+    <div class="person">
+      <div class="poster p6"><q>"오늘은 어디서<br>작업하지?"</q><span>카공하는 대학생, 프리랜서</span></div>
+      <ul><li><span class="dot"></span>"작업하기 좋음" 키워드 랭킹</li><li><span class="dot"></span>카공 컬렉션 둘러보기</li></ul>
+    </div>
+    <div class="person">
+      <div class="poster p1"><q>"거기 몇 점이었지?"</q><span>다녀온 곳을 남겨 두는 기록파</span></div>
+      <ul><li><span class="dot"></span>사진이 붙는 캘린더</li><li><span class="dot"></span>별점 분포와 취향 분석</li></ul>
+    </div>
+    <div class="person">
+      <div class="poster p4"><q>"밥 먹고<br>근처 카페 어디?"</q><span>새 동네를 걷는 탐험가</span></div>
+      <ul><li><span class="dot"></span>내 주변 500m ~ 3km</li><li><span class="dot"></span>식당 옆 카페, 걸어서 몇 분</li></ul>
+    </div>
+  </div>
+  <span class="page">08 / 10</span>
+</section>
+
+<!-- 9. 기술 -->
+<section class="slide tech">
+  <div class="text">
+    <h2>앱까지 생각한<br>API 우선 구조</h2>
+    <div class="facts">
+      <div><span class="num">100</span><p><b>개의 백엔드 테스트</b>별점 0.5 단위, 중복 평가, 추천, 랭킹</p></div>
+      <div><span class="num">0</span><p><b>개의 ML 라이브러리</b>추천은 파이썬과 Django ORM으로 직접</p></div>
+      <div><span class="num">1</span><p><b>개의 API로 웹과 앱을 같이</b>나중에 앱에서도 그대로 써요</p></div>
+    </div>
+  </div>
+  <div class="arch">
+    <div class="box"><b>React + Vite</b><span>웹 화면, 모바일 탭 바</span></div>
+    <div class="arrow">↕</div>
+    <div class="box ink"><b>Django REST Framework</b><span>JWT 로그인, 추천, 랭킹</span></div>
+    <div class="arrow">↕</div>
+    <div class="pair"><div class="box oat"><b>SQLite → PostgreSQL</b></div><div class="box oat"><b>이미지 저장소</b></div></div>
+    <div class="apis">
+      <span class="chip">카카오 로컬</span><span class="chip">카카오 지도</span><span class="chip">카카오 로그인</span><span class="chip">카카오톡 공유</span><span class="chip">다음 이미지 검색</span><span class="chip">CLOVA OCR</span>
+    </div>
+  </div>
+  <span class="page">09 / 10</span>
+</section>
+
+<!-- 10. 로드맵 -->
+<section class="slide dark">
+  <div class="logo">cafepedia</div>
+  <h2 style="margin-top:72px">웹으로 먼저 써 보고,<br>반응이 좋으면 앱으로</h2>
+  <div class="road">
+    <div class="now"><i>지금</i><b>MVP 완성</b><p>기록, 추천, 랭킹, 영수증 인증, 컬렉션</p></div>
+    <div><i>다음</i><b>배포</b><p>Render, Vercel, PostgreSQL</p></div>
+    <div><i>그다음</i><b>베타와 데이터</b><p>지인들의 별점으로 예상 별점 다듬기</p></div>
+    <div><i>이후</i><b>앱</b><p>PWA, 그다음 React Native</p></div>
+  </div>
+  <div class="end">
+    <span class="num hollow">5.0</span>
+    <p>다음에 갈 곳, 별점으로 고르세요.<br>github.com/yurimirimiq/cafe-pedia</p>
+  </div>
+  <span class="page">10 / 10</span>
+</section>
+
+<script>
+  // #3 → 3번째 장만 (PNG 렌더링용)
+  const n = parseInt(location.hash.slice(1))
+  if (n) {
+    document.body.classList.add('one')
+    document.querySelectorAll('.slide')[n - 1].classList.add('show')
+  }
+</script>
+</body>
+</html>
