@@ -110,7 +110,7 @@ def fill_thumbnails(places):
     def find(place):
         area = ' '.join(place.address.split()[1:2])  # "서울 마포구 망원로 1" → "마포구"
         try:
-            return kakao.image_search(f'{place.name} {area}') or ('', '')
+            return kakao.pick_image(kakao.image_search(f'{place.name} {area}'), place.hidden_images) or ('', '', '')
         except kakao.KakaoError:
             return None  # 실패하면 저장하지 않고 다음에 다시 시도
 
@@ -122,9 +122,26 @@ def fill_thumbnails(places):
         results = list(pool.map(find, places))
     for place, found in zip(places, results):
         if found is not None:
-            place.thumbnail_url, place.thumbnail_source = found
+            place.image_url, place.thumbnail_url, place.thumbnail_source = found
             place.thumbnail_checked_at = timezone.now()
-            place.save(update_fields=['thumbnail_url', 'thumbnail_source', 'thumbnail_checked_at'])
+            place.save(update_fields=['image_url', 'thumbnail_url', 'thumbnail_source', 'thumbnail_checked_at'])
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([UserRateThrottle])
+def report_photo(request, place_id):
+    """대표 사진이 이상해요: 지금 사진을 숨기고 다음 후보로 바꾼다 (이미지 검색 사진만, 리뷰 사진은 대상이 아니다)"""
+    place = get_object_or_404(Place, pk=place_id)
+    current = place.image_url or place.thumbnail_url
+    if not current or ReviewPhoto.objects.filter(review__place=place).exists():
+        return Response({'detail': '바꿀 수 있는 사진이 없어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    place.hidden_images = [*place.hidden_images, current]
+    place.thumbnail_checked_at = None
+    place.save(update_fields=['hidden_images', 'thumbnail_checked_at'])
+    fill_thumbnails([place])
+    data = PlaceSerializer(with_ratings(Place.objects.filter(pk=place.pk)).get()).data
+    return Response({k: data[k] for k in ['thumbnail_url', 'thumbnail_fallback', 'thumbnail_source']})
 
 
 @api_view(['GET'])

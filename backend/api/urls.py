@@ -22,6 +22,7 @@ urlpatterns = [
     path('places/<int:place_id>/review/receipt/', views.my_review_receipt),
     path('places/<int:place_id>/review/photos/<int:photo_id>/', views.my_review_photo),
     path('places/<int:place_id>/wish/', views.wish),
+    path('places/<int:place_id>/photo/report/', views.report_photo),
     path('home/', views.home),
     path('rankings/', views.rankings),
     path('me/calendar/', views.my_calendar),

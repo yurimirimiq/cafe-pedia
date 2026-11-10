@@ -67,9 +67,26 @@ def search_places(query, category=None):
 
 
 def image_search(query):
-    """다음(카카오) 이미지 검색에서 가장 정확한 결과 1개 → (썸네일 주소, 출처 글 주소) 또는 None"""
-    documents = _get(IMAGE_URL, {'query': query, 'sort': 'accuracy', 'size': 1})
-    return (documents[0]['thumbnail_url'], documents[0]['doc_url']) if documents else None
+    """다음(카카오) 이미지 검색 정확도 순 상위 10개 (image_url 원본, thumbnail_url 미리보기, doc_url 출처 글, width, height)"""
+    return _get(IMAGE_URL, {'query': query, 'sort': 'accuracy', 'size': 10})
+
+
+MIN_IMAGE_WIDTH = 400  # 이보다 작으면 큰 사진 자리에서 흐려 보인다
+
+
+def pick_image(documents, skip=()):
+    """이미지 검색 결과 중 장소 사진으로 쓸 만한 것 하나 → (원본, 미리보기, 출처 글) 또는 None
+
+    작은 사진, 세로로 긴 사진(메뉴판·캡처), 사용자가 이상하다고 한 사진(skip)은 빼고,
+    정확도 순서를 지키면서 가로 사진을 먼저 고른다.
+    """
+    ok = [
+        d for d in documents
+        if d['image_url'] not in skip and d['thumbnail_url'] not in skip
+        and d['width'] >= MIN_IMAGE_WIDTH and d['height'] and 0.75 <= d['width'] / d['height'] <= 2.2
+    ]
+    ok.sort(key=lambda d: d['width'] < d['height'])  # 안정 정렬이라 같은 모양끼리는 정확도 순서 그대로
+    return (ok[0]['image_url'], ok[0]['thumbnail_url'], ok[0]['doc_url']) if ok else None
 
 
 def login_url(redirect_uri, state):

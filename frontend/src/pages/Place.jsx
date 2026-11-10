@@ -61,6 +61,10 @@ export default function Place() {
   }
 
   async function removeReview() {
+    // 별점을 지우면 한 줄 평·사진·키워드·영수증 인증도 함께 지워지므로, 그런 게 있으면 먼저 묻는다
+    const mine = place.my_review
+    const extra = mine && (mine.comment || mine.photos.length || mine.tags.length || mine.verified)
+    if (extra && !window.confirm('별점을 지우면 한 줄 평, 사진, 키워드, 영수증 인증도 함께 지워져요. 지울까요?')) return
     const res = await apiFetch(`/api/places/${id}/review/`, { method: 'DELETE' })
     setPlace((p) => ({ ...p, ...res }))
     load() // 한 줄 평 목록도 갱신
@@ -70,6 +74,20 @@ export default function Place() {
     if (!user) return navigate('/login')
     const res = await apiFetch(`/api/places/${id}/wish/`, { method: place.wished ? 'DELETE' : 'POST' })
     setPlace((p) => ({ ...p, ...res }))
+  }
+
+  // 이미지 검색으로 가져온 대표 사진이 엉뚱하면 숨기고 다음 후보로 바꾼다
+  async function reportPhoto() {
+    if (!user) return navigate('/login')
+    setBusy(true)
+    try {
+      const res = await apiFetch(`/api/places/${id}/photo/report/`, { method: 'POST' })
+      setPlace((p) => ({ ...p, ...res }))
+    } catch (err) {
+      setError(err.data?.detail ?? '사진을 바꾸지 못했어요. 잠시 후 다시 시도하세요.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   function openComment() {
@@ -142,7 +160,7 @@ export default function Place() {
         <div>
           <div className="rate">
             <div>
-              <StarRating value={mine ? Number(mine.rating) : null} onChange={(v) => saveReview({ rating: v })} disabled={busy} />
+              <StarRating value={mine ? Number(mine.rating) : null} onChange={(v) => (v === null ? removeReview() : saveReview({ rating: v }))} disabled={busy} />
               <p className="muted small">
                 {place.review_count ? `${place.review_count}명이 평가했어요` : '첫 별점을 남겨 보세요'}
                 {place.comments.length > 0 && <> · <a href="#comments">한 줄 평 {place.comments.length}개</a></>}
@@ -260,7 +278,12 @@ export default function Place() {
             <dt>주소</dt><dd>{place.address}</dd>
             {mine && <><dt>방문</dt><dd>{mine.visited_on.replaceAll('-', '. ')}에 다녀왔어요</dd></>}
           </dl>
-          {place.thumbnail_source && <a className="photo-credit" href={place.thumbnail_source} target="_blank" rel="noreferrer">대표 사진 출처 보기</a>}
+          {place.thumbnail_source && (
+            <p className="photo-credit">
+              <a href={place.thumbnail_source} target="_blank" rel="noreferrer">대표 사진 출처 보기</a>
+              <button className="link small" onClick={reportPhoto} disabled={busy}>사진이 이상해요</button>
+            </p>
+          )}
           <NearbyPicks place={place} />
         </aside>
       </div>

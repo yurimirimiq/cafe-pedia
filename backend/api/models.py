@@ -38,10 +38,14 @@ class Place(models.Model):
     # 위도·경도: 소수점 7자리면 약 1cm 정밀도
     latitude = models.DecimalField('위도', max_digits=10, decimal_places=7)
     longitude = models.DecimalField('경도', max_digits=10, decimal_places=7)
-    # 썸네일: 카카오 이미지 검색 결과 (사진 주소 + 출처 글 주소). 한 번 찾으면 저장해 두고 다시 찾지 않는다
+    # 대표 사진: 카카오 이미지 검색 결과 (원본 + 130px 미리보기 + 출처 글 주소). 한 번 찾으면 저장해 두고 다시 찾지 않는다
+    # 원본은 블로그 서버에 있어 막히면 미리보기로 대신 보여준다
+    image_url = models.URLField('원본 사진', max_length=2000, blank=True)
     thumbnail_url = models.URLField('썸네일', max_length=500, blank=True)
     thumbnail_source = models.URLField('썸네일 출처', max_length=500, blank=True)
     thumbnail_checked_at = models.DateTimeField('썸네일 찾은 시각', null=True, blank=True)
+    # 사용자가 "사진이 이상해요"라고 한 사진 주소들 (다시 고르지 않는다)
+    hidden_images = models.JSONField('숨긴 사진', default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

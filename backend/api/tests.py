@@ -2,7 +2,7 @@ from django.test import TestCase
 from unittest.mock import patch as _patch
 
 # 테스트에서는 실제 카카오 이미지 검색을 부르지 않는다 (썸네일 테스트만 따로 바꿔 끼움)
-_patch('api.kakao.image_search', return_value=None).start()
+_patch('api.kakao.image_search', return_value=[]).start()
 from django.utils import timezone
 
 
@@ -467,19 +467,45 @@ class TagApiTest(APITestCase):
 
 
 
+def image_doc(name, width=800, height=600):
+    return {
+        'image_url': f'https://img/{name}.jpg', 'thumbnail_url': f'https://thumb/{name}.jpg',
+        'doc_url': f'https://blog/{name}', 'width': width, 'height': height,
+    }
+
+
+class PickImageTest(TestCase):
+    def test_skips_small_tall_and_hidden_and_prefers_landscape(self):
+        docs = [
+            image_doc('tiny', 300, 200),  # 너무 작다
+            image_doc('menu', 600, 1200),  # 세로로 긴 메뉴판·캡처
+            image_doc('square', 800, 900),  # 살짝 세로 (괜찮지만 가로보다 뒤로)
+            image_doc('hidden', 1000, 700),  # 사용자가 숨긴 사진
+            image_doc('wide', 1000, 700),
+        ]
+        self.assertEqual(kakao.pick_image(docs, ['https://img/hidden.jpg'])[0], 'https://img/wide.jpg')
+        self.assertEqual(kakao.pick_image(docs[:3])[0], 'https://img/square.jpg')
+        self.assertIsNone(kakao.pick_image(docs[:2]))
+        self.assertIsNone(kakao.pick_image([image_doc('broken', 800, 0)]))  # 높이 정보가 없으면 쓰지 않는다
+
+
 class ThumbnailTest(APITestCase):
     def setUp(self):
         self.place = Place.objects.create(kakao_id='1', category=Place.Category.CAFE, name='카페 온기', address='서울 마포구 망원로 1', latitude=0, longitude=0)
 
-    @patch('api.kakao.image_search', return_value=('https://img/thumb.jpg', 'https://blog/post'))
+    @patch('api.kakao.image_search', return_value=[image_doc('a')])
     def test_detail_finds_thumbnail_once(self, mock):
         res = self.client.get(f'/api/places/{self.place.id}/').json()
-        self.assertEqual((res['thumbnail_url'], res['thumbnail_source']), ('https://img/thumb.jpg', 'https://blog/post'))
+        # 원본을 보여주고, 막히면 쓸 미리보기와 출처 글도 함께
+        self.assertEqual(
+            (res['thumbnail_url'], res['thumbnail_fallback'], res['thumbnail_source']),
+            ('https://img/a.jpg', 'https://thumb/a.jpg', 'https://blog/a'),
+        )
         mock.assert_called_once_with('카페 온기 마포구')
         self.client.get(f'/api/places/{self.place.id}/')
         self.assertEqual(mock.call_count, 1)  # 저장해 두고 다시 찾지 않는다
 
-    @patch('api.kakao.image_search', return_value=None)
+    @patch('api.kakao.image_search', return_value=[])
     def test_no_image_is_remembered(self, mock):
         self.client.get(f'/api/places/{self.place.id}/')
         self.client.get(f'/api/places/{self.place.id}/')
@@ -491,6 +517,18 @@ class ThumbnailTest(APITestCase):
         res = self.client.get(f'/api/places/{self.place.id}/')
         self.assertEqual(res.status_code, 200)  # 사진 실패해도 상세는 보인다
         self.assertIsNone(Place.objects.get().thumbnail_checked_at)
+
+    @patch('api.kakao.image_search', return_value=[image_doc('a'), image_doc('b')])
+    def test_report_photo_moves_to_next_candidate(self, mock):
+        url = f'/api/places/{self.place.id}/photo/report/'
+        self.client.get(f'/api/places/{self.place.id}/')
+        self.assertEqual(self.client.post(url).status_code, 401)
+        self.client.force_authenticate(User.objects.create_user(username='u', password='x', nickname='u'))
+        self.assertEqual(self.client.post(url).json()['thumbnail_url'], 'https://img/b.jpg')
+        # 후보를 다 숨기면 사진 없이 커피색 타일
+        self.assertEqual(self.client.post(url).json()['thumbnail_url'], '')
+        self.assertEqual(self.client.post(url).status_code, 400)  # 더 바꿀 사진이 없다
+        self.assertEqual(Place.objects.get().hidden_images, ['https://img/a.jpg', 'https://img/b.jpg'])
 
 
 class KakaoLoginTest(APITestCase):

@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { mediaUrl } from '../api'
 
-// 장소 사진. 사진이 없거나 깨지면 필름 카메라로 흐리게 찍은 듯한 커피색 그라데이션으로 대신한다
+// 장소 사진: 원본 → (막히면) 미리보기 → (그것도 안 되면) 필름 카메라로 흐리게 찍은 듯한 커피색 그라데이션
 export default function Poster({ place, className = '', children }) {
-  const [broken, setBroken] = useState(false)
+  const [broken, setBroken] = useState([]) // 불러오지 못한 사진 주소들
   const tone = `tone-${place.id % 6}` // 같은 장소는 항상 같은 색
-  const photo = place.thumbnail_url && !broken
+  const src = [place.thumbnail_url, place.thumbnail_fallback].find((u) => u && !broken.includes(u))
 
   return (
-    <div className={`poster ${photo ? 'photo' : tone} ${className}`}>
-      {photo && (
-        <img src={mediaUrl(place.thumbnail_url)} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+    <div className={`poster ${src ? 'photo' : tone} ${className}`}>
+      {src && (
+        <img key={src} src={mediaUrl(src)} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken((b) => [...b, src])} />
       )}
       {children}
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 // 별 하나 = 왼쪽 반(0.5) + 오른쪽 반(1.0) 버튼 두 개. 별 5개로 0.5~5.0 을 고른다
+// 지금 별점을 한 번 더 누르면 onChange(null) (별점 지우기)
 export default function StarRating({ value, onChange, disabled }) {
   const [hover, setHover] = useState(null)
   const shown = hover ?? value ?? 0
@@ -22,12 +23,12 @@ export default function StarRating({ value, onChange, disabled }) {
                   className={v % 1 ? 'half left' : 'half right'}
                   role="radio"
                   aria-checked={value === v}
-                  aria-label={`${v.toFixed(1)}점`}
+                  aria-label={value === v ? `${v.toFixed(1)}점 (다시 누르면 지워져요)` : `${v.toFixed(1)}점`}
                   disabled={disabled}
                   onMouseEnter={() => setHover(v)}
                   onFocus={() => setHover(v)}
                   onBlur={() => setHover(null)}
-                  onClick={() => onChange(v)}
+                  onClick={() => { setHover(null); onChange(value === v ? null : v) }}
                 />
               ))}
             </span>

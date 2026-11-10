@@ -12,8 +12,8 @@ export function loadRecent() {
 }
 
 export function saveRecent(place) {
-  const { id, name, category, category_label, category_detail, address, avg_rating, review_count, top_tags, thumbnail_url } = place
-  const item = { id, name, category, category_label, category_detail, address, avg_rating, review_count, top_tags, thumbnail_url }
+  const { id, name, category, category_label, category_detail, address, avg_rating, review_count, top_tags, thumbnail_url, thumbnail_fallback } = place
+  const item = { id, name, category, category_label, category_detail, address, avg_rating, review_count, top_tags, thumbnail_url, thumbnail_fallback }
   try {
     localStorage.setItem(KEY, JSON.stringify([item, ...loadRecent().filter((p) => p.id !== id)].slice(0, MAX)))
   } catch {

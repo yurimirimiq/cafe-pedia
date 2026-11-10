@@ -39,16 +39,25 @@ class PlaceSerializer(serializers.ModelSerializer):
     avg_rating = serializers.DecimalField(max_digits=2, decimal_places=1, read_only=True, allow_null=True)
     review_count = serializers.IntegerField(read_only=True)
     top_tags = serializers.SerializerMethodField()
-    # 대표 사진: 우리 사용자가 올린 리뷰 사진이 있으면 그것, 없으면 카카오 이미지 검색 썸네일
+    # 대표 사진: 우리 사용자가 올린 리뷰 사진이 있으면 그것, 없으면 카카오 이미지 검색 원본
+    # thumbnail_fallback: 원본이 막혔을 때 대신 보여줄 130px 미리보기
     thumbnail_url = serializers.SerializerMethodField()
+    thumbnail_fallback = serializers.SerializerMethodField()
     thumbnail_source = serializers.SerializerMethodField()
 
     def _review_photo(self, place):
-        return ReviewPhoto.objects.filter(review__place=place).order_by('-created_at').first()
+        # 사진 칸 3개가 같은 값을 쓰므로 장소마다 한 번만 찾는다
+        cache = self.__dict__.setdefault('_photo_cache', {})
+        if place.pk not in cache:
+            cache[place.pk] = ReviewPhoto.objects.filter(review__place=place).order_by('-created_at').first()
+        return cache[place.pk]
 
     def get_thumbnail_url(self, place):
         photo = self._review_photo(place)
-        return photo.image.url if photo else place.thumbnail_url
+        return photo.image.url if photo else (place.image_url or place.thumbnail_url)
+
+    def get_thumbnail_fallback(self, place):
+        return '' if self._review_photo(place) or not place.image_url else place.thumbnail_url
 
     def get_thumbnail_source(self, place):
         return '' if self._review_photo(place) else place.thumbnail_source
@@ -64,7 +73,7 @@ class PlaceSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'kakao_id', 'name', 'category', 'category_label', 'category_detail',
             'address', 'latitude', 'longitude', 'avg_rating', 'review_count', 'top_tags',
-            'thumbnail_url', 'thumbnail_source',
+            'thumbnail_url', 'thumbnail_fallback', 'thumbnail_source',
         ]
 
 

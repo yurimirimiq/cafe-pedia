@@ -147,7 +147,9 @@ a { color: inherit; text-decoration: none; }
 .side dl { margin: 20px 0 0; font-size: 15px; display: grid; grid-template-columns: 56px 1fr; row-gap: 10px; }
 .side dt { color: var(--mute); }
 .side dd { margin: 0; }
-.photo-credit { display: inline-block; margin-top: 12px; font-size: 13px; color: var(--mute); text-decoration: underline; }
+.photo-credit { display: flex; align-items: center; gap: 14px; margin-top: 12px; font-size: 13px; color: var(--mute); }
+.photo-credit a { text-decoration: underline; }
+.photo-credit .link { font-size: 13px; color: var(--mute); }
 .near { margin-top: 28px; }
 .near h3 { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
 .near a { display: flex; gap: 12px; align-items: center; padding: 8px 0; }
@@ -378,7 +380,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* 랭킹 */
-.ranking > .muted { margin: -8px 0 20px; font-size: 15px; }
 .filter-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: start; gap: 8px; margin-top: 14px; }
 .filter-row > span { padding-top: 9px; font-size: 14px; font-weight: 700; color: var(--mute); }
 .filter-row > div { display: flex; flex-wrap: wrap; gap: 8px; }

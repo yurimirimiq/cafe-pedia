@@ -36,7 +36,6 @@ export default function Ranking() {
   return (
     <section className="page ranking">
       <h1>카페피디아 별점 랭킹</h1>
-      <p className="muted">평가가 적은 곳은 전체 평균 쪽으로 당겨서 순위를 매겨요. 별점 하나만으로는 1등이 되지 않아요.</p>
 
       <div className="seg" role="group" aria-label="분류">
         {CATEGORIES.map(([code, label]) => (
