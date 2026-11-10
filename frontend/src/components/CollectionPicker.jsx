@@ -59,7 +59,7 @@ export default function CollectionPicker({ place }) {
         <svg className="share-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20.5V5.5A1.5 1.5 0 0 1 7.5 4h9A1.5 1.5 0 0 1 18 5.5v15l-6-4z" /><path d="M12 8v5M9.5 10.5h5" /></svg>
         <span className="share-label">담기</span>
       </button>
-      {open && (
+      {open && user && (
         <div className="share-menu collect-menu" role="menu" aria-label="컬렉션에 담기">
           <p className="menu-title">컬렉션에 담기</p>
           {rows === null && <p className="muted small menu-note">불러오는 중…</p>}

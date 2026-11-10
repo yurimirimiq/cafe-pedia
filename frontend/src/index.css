@@ -492,6 +492,7 @@ a { color: inherit; text-decoration: none; }
 /* 홈 포스터 줄(.cards.fit): 열 수가 줄면 마지막 줄이 덜 차지 않게 남는 포스터를 숨긴다
    (첫 줄은 항상 보이게, 두 번째 줄부터 "모자란 마지막 줄"만 숨김) */
 @media (max-width: 1000px) and (min-width: 641px) {
+  .banner { margin: 0 24px 16px; }
   .cards.fit > :nth-child(3n+4):nth-last-child(-n+2),
   .cards.fit > :nth-child(3n+4):nth-last-child(-n+2) ~ * { display: none; }
 }
@@ -499,7 +500,4 @@ a { color: inherit; text-decoration: none; }
   .banner { margin: 0 20px 12px; }
   .cards.fit > :nth-child(n+7) { display: none; } /* 폰에선 2열 3줄까지만 */
   .cards.fit > :nth-child(2n+3):last-child { display: none; }
-}
-@media (min-width: 641px) and (max-width: 1000px) {
-  .banner { margin: 0 24px 16px; }
 }

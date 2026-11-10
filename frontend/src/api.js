@@ -54,10 +54,12 @@ export async function apiFetch(path, { method = 'GET', body } = {}) {
   const hadToken = Boolean(tokens.access)
   let res = await send()
   if (res.status === 401 && tokens.refresh && (await refreshAccess())) res = await send()
-  // 새 토큰도 못 받으면 로그인이 만료된 것: 토큰을 지우고 앱에 알린다 (auth.jsx 가 로그아웃 처리)
+  // 새 토큰도 못 받으면 로그인이 만료된 것: 토큰을 지우고 앱에 알린 뒤(auth.jsx 가 로그아웃 처리)
+  // 토큰 없이 한 번 더 보낸다 — 깨진 토큰을 붙이면 로그인이 필요 없는 API 도 401 이 나기 때문
   if (res.status === 401 && hadToken) {
     tokens.clear()
     window.dispatchEvent(new Event('auth:expired'))
+    res = await send()
   }
 
   const data = await res.json().catch(() => null)

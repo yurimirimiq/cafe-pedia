@@ -214,7 +214,7 @@ export default function Place() {
             </div>
           )}
 
-          {editingComment && (
+          {editingComment && mine && (
             <form className="comment-form" onSubmit={submitComment}>
               <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={200} rows={3} placeholder="라떼가 진하고 창가 자리가 좋아요" autoFocus />
               <div className="photo-picker">

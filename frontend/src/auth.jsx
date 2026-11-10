@@ -15,10 +15,9 @@ export function AuthProvider({ children }) {
     const onExpired = () => { setUser(null); setExpired(true) }
     window.addEventListener('auth:expired', onExpired)
     if (tokens.access) {
-      // 만료(401)면 apiFetch 가 이미 토큰을 지웠다. 서버가 잠깐 꺼진 경우엔 토큰을 남겨 둔다
       apiFetch('/api/auth/me/')
         .then(setUser)
-        .catch(() => {})
+        .catch(() => tokens.clear()) // 토큰은 있는데 로그아웃처럼 보이는 어긋난 상태를 만들지 않는다
         .finally(() => setReady(true))
     }
     return () => window.removeEventListener('auth:expired', onExpired)
