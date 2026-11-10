@@ -3,19 +3,11 @@ import { Link } from 'react-router-dom'
 import { apiFetch, errorText } from '../api'
 import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
+import { getCoords, meters } from '../location'
 
 const CATEGORIES = [['', '전체'], ['CE7', '카페'], ['FD6', '식당']]
 const RADII = [[500, '500m'], [1000, '1km'], [3000, '3km']]
 const SORTS = [['distance', '가까운 순'], ['rating', '별점 높은 순']]
-
-const meters = (m) => (m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`)
-
-// 위치 권한 거절 등 브라우저가 알려주는 이유를 사람이 읽을 문장으로
-const LOCATION_ERRORS = {
-  1: '위치 권한이 꺼져 있어요. 브라우저 주소창의 위치 아이콘에서 허용한 뒤 다시 눌러 주세요.',
-  2: '현재 위치를 알 수 없어요. 잠시 후 다시 시도해 주세요.',
-  3: '위치를 찾는 데 시간이 너무 오래 걸렸어요. 다시 시도해 주세요.',
-}
 
 export default function Nearby() {
   const [coords, setCoords] = useState(null)
@@ -28,17 +20,8 @@ export default function Nearby() {
 
   // 위치 권한 요청은 사용자가 버튼을 눌렀을 때만 한다 (페이지를 열자마자 묻지 않기)
   function locate() {
-    if (!navigator.geolocation) {
-      setStatus('error')
-      return setMessage('이 브라우저는 위치 찾기를 지원하지 않아요.')
-    }
     setStatus('locating')
-    navigator.geolocation.getCurrentPosition(
-      // 소수점 3자리(약 100m)로 줄여서 보낸다: 주변 검색엔 충분하고 정확한 위치는 남기지 않는다
-      ({ coords: c }) => setCoords({ lat: c.latitude.toFixed(3), lng: c.longitude.toFixed(3) }),
-      (err) => { setStatus('error'); setMessage(LOCATION_ERRORS[err.code] ?? LOCATION_ERRORS[2]) },
-      { timeout: 10000, maximumAge: 60000 },
-    )
+    getCoords().then(setCoords, (err) => { setStatus('error'); setMessage(err.message) })
   }
 
   useEffect(() => {

@@ -64,24 +64,54 @@ def with_ratings(places):
 # 카카오 API 하루 호출 한도를 지키기 위해 검색 횟수를 제한한다
 @throttle_classes([AnonRateThrottle, UserRateThrottle])
 def search_places(request):
-    """장소 검색: ?q=망원동 카페&category=CE7(카페)|FD6(식당)
+    """장소 검색: ?q=망원동 카페&category=CE7(카페)|FD6(식당)&page=1~3&lat=37.556&lng=126.901
 
     카카오에서 찾은 장소를 DB에 저장(이미 있으면 갱신)하고, 우리 DB의 id·평균 별점과 함께 돌려준다.
+    위치를 주면 가까운 순 + 거리. 위치는 카카오에 검색할 때만 쓰고 저장하지 않는다.
+    → {places: [...], has_more: 다음 페이지가 있는지}
     """
-    query = request.query_params.get('q', '').strip()
-    category = request.query_params.get('category') or None
+    params = request.query_params
+    query = params.get('q', '').strip()
+    category = params.get('category') or None
     if not query:
         return Response({'detail': '검색어를 입력하세요.'}, status=status.HTTP_400_BAD_REQUEST)
     if category and category not in kakao.ALLOWED_CATEGORIES:
         return Response({'detail': '분류는 CE7(카페) 또는 FD6(식당)이에요.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        page = int(params.get('page', 1))
+    except ValueError:
+        page = 0
+    if not 1 <= page <= kakao.MAX_SEARCH_PAGE:
+        return Response({'detail': f'page 는 1~{kakao.MAX_SEARCH_PAGE} 이에요.'}, status=status.HTTP_400_BAD_REQUEST)
+    lat = lng = None
+    if 'lat' in params or 'lng' in params:
+        coords = parse_coords(params)
+        if isinstance(coords, Response):
+            return coords
+        lat, lng = coords
 
     try:
-        documents = kakao.search_places(query, category)
+        documents, has_more = kakao.search_page(query, category, page, lat, lng)
     except kakao.KakaoError:
         return Response({'detail': '지금은 검색할 수 없어요. 잠시 후 다시 시도하세요.'}, status=status.HTTP_502_BAD_GATEWAY)
 
-    places = save_places(documents)
-    return Response(PlaceSerializer(places, many=True).data)
+    rows = PlaceSerializer(save_places(documents), many=True).data
+    if lat is not None:
+        distances = {d['id']: int(d['distance'] or 0) for d in documents}
+        rows = [{**row, 'distance': distances[row['kakao_id']]} for row in rows]
+    return Response({'places': rows, 'has_more': has_more})
+
+
+def parse_coords(params):
+    """?lat=&lng= → (lat, lng), 잘못됐으면 400 Response"""
+    try:
+        lat, lng = float(params['lat']), float(params['lng'])
+    except (KeyError, ValueError):
+        return Response({'detail': 'lat, lng 를 숫자로 보내 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
+    # 대한민국 대략 범위 밖이면 카카오가 결과를 주지 않으니 미리 막는다
+    if not (33 <= lat <= 39 and 124 <= lng <= 132):
+        return Response({'detail': '국내 위치에서만 찾을 수 있어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    return lat, lng
 
 
 def save_places(documents):
@@ -156,14 +186,14 @@ def nearby_places(request):
 
     위치는 카카오에 검색할 때만 쓰고 저장하지 않는다.
     """
+    coords = parse_coords(request.query_params)
+    if isinstance(coords, Response):
+        return coords
+    lat, lng = coords
     try:
-        lat, lng = float(request.query_params['lat']), float(request.query_params['lng'])
         radius = int(request.query_params.get('radius', 1000))
-    except (KeyError, ValueError):
-        return Response({'detail': 'lat, lng 를 숫자로 보내 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
-    # 대한민국 대략 범위 밖이면 카카오가 결과를 주지 않으니 미리 막는다
-    if not (33 <= lat <= 39 and 124 <= lng <= 132):
-        return Response({'detail': '국내 위치에서만 찾을 수 있어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({'detail': 'radius 는 숫자로 보내 주세요.'}, status=status.HTTP_400_BAD_REQUEST)
     radius = min(max(radius, 100), 5000)
     category = request.query_params.get('category') or None
     if category and category not in kakao.ALLOWED_CATEGORIES:

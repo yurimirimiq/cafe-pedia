@@ -27,14 +27,14 @@ IMAGE_URL = 'https://dapi.kakao.com/v2/search/image'
 
 
 def _get(url, params):
-    """카카오 API GET 호출 → documents 목록"""
+    """카카오 API GET 호출 → 응답 전체 ({'documents': [...], 'meta': {...}})"""
     key = os.environ.get('KAKAO_REST_API_KEY')
     if not key:
         raise KakaoError('KAKAO_REST_API_KEY 가 .env 에 없어요.')
     req = Request(f'{url}?{urlencode(params)}', headers={'Authorization': f'KakaoAK {key}'})
     try:
         with urlopen(req, timeout=5) as res:
-            return json.load(res)['documents']
+            return json.load(res)
     except HTTPError as e:
         raise KakaoError(f'카카오 API 오류 {e.code}') from e
     except (URLError, TimeoutError) as e:
@@ -50,25 +50,38 @@ def nearby_places(lat, lng, category=None, radius=1000):
     for code in [category] if category else sorted(ALLOWED_CATEGORIES):
         documents += _get(CATEGORY_URL, {
             'category_group_code': code, 'x': lng, 'y': lat, 'radius': radius, 'sort': 'distance', 'size': 15,
-        })
+        })['documents']
     return sorted(documents, key=lambda d: int(d['distance'] or 0))
 
 
-def search_places(query, category=None):
-    """키워드로 카페·식당을 검색해 카카오 응답의 documents 목록을 돌려준다.
+# 카카오 키워드 검색은 검색어 하나에 45개(15개씩 3페이지)까지만 준다. 그 뒤 페이지는 마지막 결과를 되풀이한다
+MAX_SEARCH_PAGE = 3
+
+
+def search_page(query, category=None, page=1, lat=None, lng=None):
+    """키워드로 카페·식당 검색 → (documents, 다음 페이지가 있는지)
 
     category 가 없으면 전체를 검색한 뒤 카페·식당만 남긴다.
+    좌표를 주면 가까운 순으로 받고, 각 document 에 distance(미터, 문자열)가 들어 있다.
     """
-    params = {'query': query, 'size': 15}
+    params = {'query': query, 'size': 15, 'page': page}
     if category:
         params['category_group_code'] = category
-    documents = _get(SEARCH_URL, params)
-    return [d for d in documents if d['category_group_code'] in ALLOWED_CATEGORIES]
+    if lat is not None:
+        params.update(x=lng, y=lat, sort='distance')
+    body = _get(SEARCH_URL, params)
+    documents = [d for d in body['documents'] if d['category_group_code'] in ALLOWED_CATEGORIES]
+    return documents, not body['meta']['is_end'] and page < MAX_SEARCH_PAGE
+
+
+def search_places(query, category=None):
+    """첫 페이지만 (홈의 동네별 줄처럼 상위 몇 곳만 필요할 때)"""
+    return search_page(query, category)[0]
 
 
 def image_search(query):
     """다음(카카오) 이미지 검색 정확도 순 상위 10개 (image_url 원본, thumbnail_url 미리보기, doc_url 출처 글, width, height)"""
-    return _get(IMAGE_URL, {'query': query, 'sort': 'accuracy', 'size': 10})
+    return _get(IMAGE_URL, {'query': query, 'sort': 'accuracy', 'size': 10})['documents']
 
 
 MIN_IMAGE_WIDTH = 400  # 이보다 작으면 큰 사진 자리에서 흐려 보인다

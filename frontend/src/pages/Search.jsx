@@ -4,6 +4,7 @@ import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
+import { getCoords, meters } from '../location'
 import { loadRecent } from '../recent'
 import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
@@ -21,16 +22,48 @@ export default function Search() {
   const category = params.get('category') ?? ''
   const [input, setInput] = useState(q)
   const [state, setState] = useState({ status: 'idle', places: [] })
+  // 위치는 주소에 남기지 않는다 (방문 기록·공유 링크에 좌표가 남지 않게)
+  const [coords, setCoords] = useState(null)
+  const [locating, setLocating] = useState(false)
+  const [locError, setLocError] = useState('')
+
+  // 같은 조건의 검색인지 구분하는 값: "더 보기"가 늦게 와도 다른 검색 결과에 붙지 않게
+  const key = `${q}|${category}|${coords?.lat},${coords?.lng}`
+  const searchUrl = (page) => `/api/places/search/?${new URLSearchParams({ q, page, ...(category && { category }), ...coords })}`
+  const failText = (err) => errorText(err, '검색하지 못했어요. 잠시 후 다시 시도하세요.')
 
   useEffect(() => {
     if (!q) return setState({ status: 'idle', places: [] })
     let ignore = false // 검색어를 빨리 바꿨을 때 늦게 온 이전 결과를 무시
     setState((s) => ({ ...s, status: 'loading' }))
-    apiFetch(`/api/places/search/?${new URLSearchParams({ q, ...(category && { category }) })}`)
-      .then((places) => !ignore && setState({ status: 'done', places }))
-      .catch((err) => !ignore && setState({ status: 'error', places: [], message: errorText(err, '검색하지 못했어요. 잠시 후 다시 시도하세요.') }))
+    apiFetch(searchUrl(1))
+      .then((res) => !ignore && setState({ status: 'done', key, places: res.places, page: 1, hasMore: res.has_more }))
+      .catch((err) => !ignore && setState({ status: 'error', places: [], message: failText(err) }))
     return () => { ignore = true }
-  }, [q, category])
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 카카오는 15개씩 3페이지(45곳)까지 준다. 이미 받은 장소는 빼고 이어 붙인다
+  async function loadMore() {
+    setState((s) => ({ ...s, status: 'more', moreError: '' }))
+    const page = state.page + 1
+    try {
+      const res = await apiFetch(searchUrl(page))
+      setState((s) => {
+        if (s.key !== key) return s
+        const ids = new Set(s.places.map((p) => p.id))
+        return { ...s, status: 'done', places: [...s.places, ...res.places.filter((p) => !ids.has(p.id))], page, hasMore: res.has_more }
+      })
+    } catch (err) {
+      setState((s) => (s.key === key ? { ...s, status: 'done', moreError: failText(err) } : s))
+    }
+  }
+
+  function toggleNear() {
+    setLocError('')
+    if (coords) return setCoords(null)
+    setLocating(true)
+    getCoords().then(setCoords, (err) => setLocError(err.message)).finally(() => setLocating(false))
+  }
 
   function onSubmit(e) {
     e.preventDefault()
@@ -56,13 +89,21 @@ export default function Search() {
         </label>
       </form>
 
-      <div className="chips" role="group" aria-label="분류">
-        {CATEGORIES.map(([code, label]) => (
-          <button key={code} className={`chip${category === code ? ' on' : ''}`} aria-pressed={category === code} onClick={() => setCategory(code)}>
-            {label}
+      <div className="filters">
+        <div className="chips" role="group" aria-label="분류">
+          {CATEGORIES.map(([code, label]) => (
+            <button key={code} className={`chip${category === code ? ' on' : ''}`} aria-pressed={category === code} onClick={() => setCategory(code)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="chips">
+          <button className={`chip${coords ? ' on' : ''}`} aria-pressed={Boolean(coords)} onClick={toggleNear} disabled={locating}>
+            {locating ? '위치 찾는 중…' : '내 위치 가까운 순'}
           </button>
-        ))}
+        </div>
       </div>
+      {locError && <p className="error" role="alert">{locError}</p>}
 
       {state.status === 'idle' && (
         <>
@@ -85,7 +126,7 @@ export default function Search() {
                 <Poster place={p} className="list-photo" />
                 <div className="result-body">
                   <strong>{p.name}</strong>
-                  <span className="muted">{[p.category_label, ...keywords(p, 2)].filter((v, i, a) => a.indexOf(v) === i).join(' · ')}</span>
+                  <span className="muted">{p.distance != null && `${meters(p.distance)} · `}{[p.category_label, ...keywords(p, 2)].filter((v, i, a) => a.indexOf(v) === i).join(' · ')}</span>
                   <span className="muted small">{p.address}</span>
                 </div>
                 {p.review_count ? <span className="rating">{p.avg_rating}</span> : <span className="muted small">평가 없음</span>}
@@ -93,6 +134,12 @@ export default function Search() {
             </li>
           ))}
         </ul>
+      )}
+      {state.moreError && <p className="error" role="alert">{state.moreError}</p>}
+      {state.hasMore && state.status !== 'loading' && (
+        <button className="btn wide more-btn" onClick={loadMore} disabled={state.status === 'more'}>
+          {state.status === 'more' ? '불러오는 중…' : '검색 결과 더 보기'}
+        </button>
       )}
       {q && <SearchCollections q={q} />}
       <p className="muted small credit">장소 정보 출처: 카카오</p>

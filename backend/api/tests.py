@@ -169,41 +169,53 @@ class PlaceSearchApiTest(TestCase):
     def search(self, q='망원동 카페', **params):
         return self.client.get('/api/places/search/', {'q': q, **params})
 
-    @patch('api.kakao.search_places')
+    @patch('api.kakao.search_page')
     def test_search_saves_places_and_keeps_order(self, mock):
-        mock.return_value = [kakao_doc('2', '두번째'), kakao_doc('1', '첫번째', 'FD6', '음식점 > 한식 > 국밥')]
+        mock.return_value = ([kakao_doc('2', '두번째'), kakao_doc('1', '첫번째', 'FD6', '음식점 > 한식 > 국밥')], False)
         res = self.search()
         self.assertEqual(res.status_code, 200)
-        self.assertEqual([p['name'] for p in res.json()], ['두번째', '첫번째'])
-        self.assertEqual(res.json()[1]['category_label'], '식당')
+        self.assertEqual([p['name'] for p in res.json()['places']], ['두번째', '첫번째'])
+        self.assertEqual(res.json()['places'][1]['category_label'], '식당')
+        self.assertFalse(res.json()['has_more'])
         self.assertEqual(Place.objects.count(), 2)
 
-    @patch('api.kakao.search_places')
+    @patch('api.kakao.search_page')
     def test_same_place_is_not_duplicated_and_gets_updated(self, mock):
-        mock.return_value = [kakao_doc('1', '옛 이름')]
+        mock.return_value = ([kakao_doc('1', '옛 이름')], False)
         self.search()
-        mock.return_value = [kakao_doc('1', '새 이름')]
+        mock.return_value = ([kakao_doc('1', '새 이름')], False)
         self.search()
         self.assertEqual(Place.objects.count(), 1)
         self.assertEqual(Place.objects.get().name, '새 이름')
 
-    @patch('api.kakao.search_places')
+    @patch('api.kakao.search_page')
     def test_result_includes_average_rating(self, mock):
-        mock.return_value = [kakao_doc('1', '카페 온기')]
+        mock.return_value = ([kakao_doc('1', '카페 온기')], False)
         self.search()
         place = Place.objects.get()
         for i, rating in enumerate(['4.0', '5.0']):
             user = User.objects.create_user(username=f'u{i}', password='x', nickname=f'n{i}')
             Review.objects.create(user=user, place=place, rating=Decimal(rating))
-        body = self.search().json()[0]
+        body = self.search().json()['places'][0]
         self.assertEqual(body['avg_rating'], '4.5')
         self.assertEqual(body['review_count'], 2)
 
-    @patch('api.kakao.search_places')
-    def test_category_is_passed_to_kakao(self, mock):
-        mock.return_value = []
-        self.search(category='FD6')
-        mock.assert_called_once_with('망원동 카페', 'FD6')
+    @patch('api.kakao.search_page', return_value=([], False))
+    def test_category_page_are_passed_to_kakao(self, mock):
+        self.search(category='FD6', page=2)
+        mock.assert_called_once_with('망원동 카페', 'FD6', 2, None, None)
+
+    @patch('api.kakao.search_page')
+    def test_location_sorts_by_distance_and_adds_distance(self, mock):
+        mock.return_value = ([{**kakao_doc('1', '스타벅스 망원역점'), 'distance': '857'}], True)
+        res = self.search(q='스타벅스', lat='37.556', lng='126.901')
+        mock.assert_called_once_with('스타벅스', None, 1, 37.556, 126.901)
+        self.assertEqual(res.json()['places'][0]['distance'], 857)
+        self.assertTrue(res.json()['has_more'])
+
+    def test_bad_page_or_location_is_rejected(self):
+        for params in [{'page': '4'}, {'page': '0'}, {'page': 'x'}, {'lat': '37.5'}, {'lat': '0', 'lng': '0'}]:
+            self.assertEqual(self.search(**params).status_code, 400, params)
 
     def test_empty_query_is_rejected(self):
         self.assertEqual(self.search(q='  ').status_code, 400)
@@ -211,16 +223,40 @@ class PlaceSearchApiTest(TestCase):
     def test_unknown_category_is_rejected(self):
         self.assertEqual(self.search(category='AT4').status_code, 400)
 
-    @patch('api.kakao.search_places', side_effect=kakao.KakaoError('down'))
+    @patch('api.kakao.search_page', side_effect=kakao.KakaoError('down'))
     def test_kakao_failure_returns_502(self, mock):
         self.assertEqual(self.search().status_code, 502)
 
+    def fake_kakao(self, documents, is_end=True):
+        """카카오 HTTP 응답을 가짜로 바꾸고, 보낸 주소를 확인할 수 있게 urlopen mock 을 돌려준다"""
+        patcher = patch('api.kakao.urlopen')
+        urlopen = patcher.start()
+        self.addCleanup(patcher.stop)
+        body = {'documents': documents, 'meta': {'is_end': is_end}}
+        urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(body).encode()
+        return urlopen
+
+    @patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'})
     def test_kakao_client_drops_non_cafe_restaurant(self):
-        fake = {'documents': [kakao_doc('1', '카페'), kakao_doc('2', '지하철역', 'SW8'), kakao_doc('3', '식당', 'FD6')]}
-        with patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'}), patch('api.kakao.urlopen') as urlopen:
-            urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(fake).encode()
-            names = [d['place_name'] for d in kakao.search_places('망원동')]
+        self.fake_kakao([kakao_doc('1', '카페'), kakao_doc('2', '지하철역', 'SW8'), kakao_doc('3', '식당', 'FD6')])
+        names = [d['place_name'] for d in kakao.search_places('망원동')]
         self.assertEqual(names, ['카페', '식당'])
+
+    @patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'})
+    def test_kakao_client_has_more_until_page_3(self):
+        self.fake_kakao([], is_end=False)
+        self.assertTrue(kakao.search_page('스타벅스', page=2)[1])
+        self.assertFalse(kakao.search_page('스타벅스', page=3)[1])  # 카카오는 3페이지(45개)까지만 준다
+        self.fake_kakao([], is_end=True)
+        self.assertFalse(kakao.search_page('스타벅스')[1])
+
+    @patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'})
+    def test_kakao_client_sends_location_as_distance_sort(self):
+        urlopen = self.fake_kakao([])
+        kakao.search_page('스타벅스', lat=37.556, lng=126.901)
+        url = urlopen.call_args[0][0].full_url
+        for part in ['x=126.901', 'y=37.556', 'sort=distance']:
+            self.assertIn(part, url)
 
     def test_kakao_client_requires_key(self):
         with patch.dict('os.environ', {'KAKAO_REST_API_KEY': ''}):
@@ -416,7 +452,7 @@ class NearbyApiTest(TestCase):
             'CE7': [{**kakao_doc('1', '카페'), 'distance': '300'}],
             'FD6': [{**kakao_doc('2', '식당', 'FD6'), 'distance': '100'}],
         }
-        with patch('api.kakao._get', side_effect=lambda url, p: responses[p['category_group_code']]):
+        with patch('api.kakao._get', side_effect=lambda url, p: {'documents': responses[p['category_group_code']]}):
             names = [d['place_name'] for d in kakao.nearby_places(37.5, 126.9)]
         self.assertEqual(names, ['식당', '카페'])
 
