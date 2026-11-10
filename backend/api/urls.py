@@ -23,6 +23,10 @@ urlpatterns = [
     path('places/<int:place_id>/review/photos/<int:photo_id>/', views.my_review_photo),
     path('places/<int:place_id>/wish/', views.wish),
     path('home/', views.home),
+    path('rankings/', views.rankings),
     path('me/calendar/', views.my_calendar),
     path('me/summary/', views.my_summary),
+    path('recommendations/', views.recommendations),
+    path('users/<int:user_id>/', views.user_profile),
+    path('users/<int:user_id>/follow/', views.follow),
 ]

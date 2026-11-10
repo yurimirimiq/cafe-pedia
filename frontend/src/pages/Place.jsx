@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch, mediaUrl } from '../api'
+import { saveRecent } from '../recent'
 import { useAuth } from '../auth'
 import PlaceMap from '../components/PlaceMap'
 import { area, keywords } from '../components/PlaceCard'
@@ -28,7 +29,7 @@ export default function Place() {
 
   const load = () =>
     apiFetch(`/api/places/${id}/`)
-      .then((p) => { setPlace(p); setStatus('done') })
+      .then((p) => { setPlace(p); setStatus('done'); saveRecent(p) })
       .catch((err) => setStatus(err.status === 404 ? 'notfound' : 'error'))
 
   // 로그인 상태가 바뀌면 내 별점·가고 싶어요를 다시 불러온다
@@ -152,6 +153,7 @@ export default function Place() {
               <button className="btn dark" onClick={openComment}>{mine?.comment || mine?.photos.length ? '한 줄 평 고치기' : '한 줄 평 쓰기'}</button>
             </div>
           </div>
+          {!mine && place.predicted_rating && <GuessBox place={place} />}
           {error && <p className="error" role="alert">{error}</p>}
 
           <ul className="tag-counts" aria-label="키워드">
@@ -231,9 +233,9 @@ export default function Place() {
             )}
             {shown.map((c) => (
               <div key={c.id} className="rv">
-                <span className="avatar">{c.nickname[0]}</span>
+                <Link to={`/users/${c.user_id}`} className="avatar" aria-hidden="true" tabIndex={-1}>{c.nickname[0]}</Link>
                 <div>
-                  <strong>{c.nickname}</strong>
+                  <Link to={`/users/${c.user_id}`}><strong>{c.nickname}</strong></Link>
                   {c.verified && <span className="badge">영수증 인증</span>}
                   {c.verified && <div className="meta">{Number(c.visited_on.slice(5, 7))}월 {Number(c.visited_on.slice(8))}일 방문</div>}
                   {c.comment && <p>{c.comment}</p>}
@@ -342,6 +344,21 @@ function ReceiptBox({ place, user, onVerified }) {
         </dl>
       )}
       {state.status === 'fail' && <p className="error" role="alert">{state.detail}</p>}
+    </div>
+  )
+}
+
+// 내 예상 별점: 아직 평가 안 한 곳에서만. 속이 빈 숫자는 별점을 남기면 채워진다는 뜻
+function GuessBox({ place }) {
+  const diff = Number(place.predicted_rating) - Number(place.avg_rating ?? place.predicted_rating)
+  const vs = diff >= 0.3 ? '평균보다 높게' : diff <= -0.3 ? '평균보다 낮게' : '평균과 비슷하게'
+  return (
+    <div className="guess-box">
+      <span className="guess">{place.predicted_rating}</span>
+      <div>
+        <b>내 예상 별점</b>
+        <span>취향이 비슷한 사람들은 이곳에 {vs} 줬어요. 다녀와서 별점을 남기면 채워져요.</span>
+      </div>
     </div>
   )
 }

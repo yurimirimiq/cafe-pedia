@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../api'
+import { useAuth } from '../auth'
+import PlaceCard from '../components/PlaceCard'
+import { loadRecent } from '../recent'
 import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 
@@ -60,7 +63,13 @@ export default function Search() {
         ))}
       </div>
 
-      {state.status === 'idle' && <p className="muted">가게 이름이나 "동네 + 메뉴"로 찾아보세요.</p>}
+      {state.status === 'idle' && (
+        <>
+          <p className="muted">가게 이름이나 "동네 + 메뉴"로 찾아보세요.</p>
+          <RecentPlaces category={category} />
+          <Recommendations category={category} />
+        </>
+      )}
       {state.status === 'loading' && <p className="muted">찾는 중…</p>}
       {state.status === 'error' && <p className="error" role="alert">{state.message ?? '검색하지 못했어요. 잠시 후 다시 시도하세요.'}</p>}
       {state.status === 'done' && state.places.length === 0 && (
@@ -86,5 +95,56 @@ export default function Search() {
       )}
       <p className="muted small credit">장소 정보 출처: 카카오</p>
     </section>
+  )
+}
+
+// 최근 본 장소 (이 브라우저에 저장된 것)
+function RecentPlaces({ category }) {
+  const list = loadRecent().filter((p) => !category || p.category === category).slice(0, 6)
+  if (!list.length) return null
+  return (
+    <>
+      <h2 className="sec-title">최근 본 장소</h2>
+      <div className="recent-row">
+        {list.map((p) => (
+          <Link key={p.id} to={`/place/${p.id}`}>
+            <Poster place={p} className="recent-photo" />
+            <span>{p.name}<small>{p.category_detail.split(' > ').at(-1)}</small></span>
+          </Link>
+        ))}
+      </div>
+    </>
+  )
+}
+
+// 좋아할 만한 곳: 취향이 비슷한 사람들의 별점으로 계산한 예상 별점 순 (로그인했을 때만)
+function Recommendations({ category }) {
+  const { user } = useAuth()
+  const [list, setList] = useState(null)
+
+  useEffect(() => {
+    if (!user) return
+    apiFetch(`/api/recommendations/${category ? `?category=${category}` : ''}`).then(setList).catch(() => setList([]))
+  }, [user, category])
+
+  if (!user || !list?.length) return null
+  const guessed = list.some((p) => p.predicted_rating)
+  return (
+    <>
+      <div className="sec-title-row">
+        <div>
+          <h2 className="sec-title">좋아할 만한 곳</h2>
+          <p className="muted small">
+            {guessed ? '나와 별점 패턴이 비슷한 사람들이 높게 준 곳이에요.' : '평가를 5개 넘게 남기면 취향이 비슷한 사람들을 찾아 예상 별점을 알려드려요.'}
+          </p>
+        </div>
+        {guessed && (
+          <p className="legend"><i className="hollow">4.3</i>내 예상 별점<i>4.3</i>내가 준 별점</p>
+        )}
+      </div>
+      <div className="grid">
+        {list.map((p) => <PlaceCard key={p.id} place={p} predicted={p.predicted_rating ?? undefined} />)}
+      </div>
+    </>
   )
 }

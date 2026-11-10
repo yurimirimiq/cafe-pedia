@@ -7,8 +7,10 @@ import Login from './pages/Login'
 import Me from './pages/Me'
 import Nearby from './pages/Nearby'
 import Place from './pages/Place'
+import Ranking from './pages/Ranking'
 import Search from './pages/Search'
 import Signup from './pages/Signup'
+import UserProfile from './pages/UserProfile'
 
 // 로그인해야 볼 수 있는 페이지: 로그인 안 했으면 로그인 화면으로 보낸다
 function RequireAuth({ children }) {
@@ -69,7 +71,9 @@ function Layout() {
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/nearby" element={<Nearby />} />
+          <Route path="/ranking" element={<Ranking />} />
           <Route path="/place/:id" element={<Place />} />
+          <Route path="/users/:id" element={<UserProfile />} />
           <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
           <Route path="/me" element={<RequireAuth><Me /></RequireAuth>} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />

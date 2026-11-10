@@ -5,7 +5,8 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
 from django.db import IntegrityError
-from django.db.models import Avg, Count, F as models_f, Max, Q
+from django.db.models import Avg, Count, F as models_f, FloatField, Max, Q, Sum
+from django.db.models.functions import Cast
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -15,8 +16,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from . import kakao, photos, receipts
-from .models import MAX_PHOTOS, TAG_OPTIONS, Place, Review, ReviewPhoto, User, Wishlist
+from . import kakao, photos, receipts, recommend
+from .models import MAX_PHOTOS, TAG_OPTIONS, Follow, Place, Review, ReviewPhoto, User, Wishlist
 from .serializers import (
     MyReviewSerializer,
     PlaceSerializer,
@@ -186,11 +187,15 @@ def place_detail(request, place_id):
         ],
         'my_review': None,
         'wished': False,
+        'predicted_rating': None,
     }
     if request.user.is_authenticated:
         mine = place.reviews.filter(user=request.user).first()
         data['my_review'] = MyReviewSerializer(mine).data if mine else None
         data['wished'] = place.wishlisted_by.filter(user=request.user).exists()
+        if not mine:
+            guess = recommend.predict(request.user, {place.id}).get(place.id)
+            data['predicted_rating'] = f'{guess:.1f}' if guess is not None else None
     return Response(data)
 
 
@@ -265,6 +270,42 @@ def trending_areas(category):
     return areas
 
 
+BAYES_WEIGHT = 3  # 평가가 이 정도 쌓이기 전까지는 전체 평균 쪽으로 당겨서 순위를 매긴다
+
+
+def ranked(places):
+    """베이지안 평균 순: (별점 합 + m × 전체 평균) / (평가 수 + m)
+
+    평가 1개짜리 5.0이 평가 50개짜리 4.6보다 위에 오지 않게, 평가가 적을수록 전체 평균 쪽으로 당긴다.
+    places 는 with_ratings 로 평가 수가 붙어 있어야 한다.
+    """
+    overall = float(Review.objects.aggregate(avg=Avg('rating'))['avg'] or 0)
+    m = BAYES_WEIGHT
+    return places.annotate(
+        rank_score=(Cast(Sum('reviews__rating'), FloatField()) + m * overall) / (Cast('review_count', FloatField()) + m)
+    ).order_by('-rank_score', '-review_count', 'name')
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def rankings(request):
+    """랭킹: ?category=CE7&tag=조용함&area=마포구 → 베이지안 평균 순 상위 30곳 + 고를 수 있는 키워드·동네"""
+    reviewed = Place.objects.filter(**category_filter(request), reviews__isnull=False).distinct()
+    category = category_filter(request).get('category')
+    tags = TAG_OPTIONS[category] if category else TAG_OPTIONS['CE7'] + TAG_OPTIONS['FD6']
+    # 평가된 장소가 많은 동네 순으로 8곳까지 칩으로 보여준다
+    areas = [a for a, _ in Counter(' '.join(addr.split()[1:2]) for addr in reviewed.values_list('address', flat=True)).most_common(8)]
+
+    places = with_ratings(reviewed)
+    if (tag := request.query_params.get('tag')) in tags:
+        # shortcut: 키워드 필터를 파이썬에서 함 (SQLite 는 JSON 목록 안을 찾는 검색을 못 함), 리뷰가 많아지면 PostgreSQL 의 tags__contains 로
+        ids = {place_id for place_id, chosen in Review.objects.values_list('place_id', 'tags') if tag in chosen}
+        places = places.filter(pk__in=ids)
+    if area := request.query_params.get('area', '').strip()[:20]:
+        places = places.filter(address__contains=f' {area} ')
+    return Response({'tags': tags, 'areas': areas, 'places': PlaceSerializer(ranked(places)[:30], many=True).data})
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def home(request):
@@ -278,8 +319,7 @@ def home(request):
         .order_by('-week_count', '-avg_rating')
         .first()
     )
-    # shortcut: 평가 1개짜리 5.0점이 1등이 될 수 있음, 평가가 쌓이면 최소 평가 수를 두거나 베이지안 평균으로 바꾼다
-    ranking = places.order_by('-avg_rating', '-review_count', 'name')[:14]
+    ranking = ranked(places)[:14]
     recent = places.annotate(last_reviewed=Max('reviews__updated_at')).order_by('-last_reviewed')[:14]
 
     return Response({
@@ -328,9 +368,6 @@ def my_summary(request):
         distribution[f'{rating:.1f}'] = n
     top = max(distribution, key=lambda k: (distribution[k], float(k))) if reviews.exists() else None
 
-    def place_with_my_rating(r):
-        return {**PlaceSerializer(with_ratings(Place.objects.filter(pk=r.place_id)).get()).data, 'my_rating': str(r.rating)}
-
     wished = with_ratings(Place.objects.filter(wishlisted_by__user=request.user)).order_by('-wishlisted_by__created_at')
     return Response({
         'counts': {
@@ -339,12 +376,92 @@ def my_summary(request):
             'wishes': request.user.wishlist.count(),
             'cafe': reviews.filter(place__category=Place.Category.CAFE).count(),
             'restaurant': reviews.filter(place__category=Place.Category.RESTAURANT).count(),
+            'followers': request.user.followers.count(),
+            'following': request.user.following.count(),
         },
         'distribution': distribution,
         'top_rating': top,
-        'recent': [place_with_my_rating(r) for r in reviews.order_by('-updated_at')[:12]],
+        'taste': taste(reviews),
+        'recent': [rated_place(r, 'my_rating') for r in reviews.order_by('-updated_at')[:12]],
         'wishlist': PlaceSerializer(wished[:12], many=True).data,
+        # 내가 팔로우한 사람들이 최근 남긴 별점
+        'feed': [
+            rated_place(r, nickname=r.user.nickname, user_id=r.user_id)
+            for r in Review.objects.filter(user__followers__follower=request.user).select_related('user').order_by('-updated_at')[:12]
+        ],
     })
+
+
+def rated_place(review, key='rating', **extra):
+    """평가 하나 → 장소 정보(평균 별점 포함) + 그 사람이 준 별점"""
+    return {**PlaceSerializer(with_ratings(Place.objects.filter(pk=review.place_id)).get()).data, key: str(review.rating), **extra}
+
+
+def taste(reviews):
+    """내 취향 분석: 평균 별점(전체 사용자 평균과 비교), 자주 고른 키워드, 높게 준 세부 분류, 자주 간 동네"""
+    rows = list(reviews)
+    if not rows:
+        return None
+    mine = sum(r.rating for r in rows) / len(rows)
+    everyone = Review.objects.aggregate(avg=Avg('rating'))['avg']
+    count = lambda values, n: [{'name': k, 'count': v} for k, v in Counter(values).most_common(n)]
+    return {
+        'avg': f'{mine:.1f}',
+        'everyone_avg': f'{everyone:.1f}',
+        'tags': count((t for r in rows for t in r.tags), 5),
+        'details': count((recommend.detail_of(r.place) for r in rows if r.rating >= 4), 3),
+        'areas': count((recommend.area_of(r.place) for r in rows), 3),
+    }
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recommendations(request):
+    """좋아할 만한 곳: ?category=CE7&area=마포구 → 내가 안 가본 곳을 예상 별점 높은 순으로 (데이터가 적으면 콜드 스타트)"""
+    candidates = with_ratings(
+        Place.objects.filter(**category_filter(request), reviews__isnull=False).exclude(reviews__user=request.user).distinct()
+    )
+    if area := request.query_params.get('area', '').strip()[:20]:
+        candidates = candidates.filter(address__contains=f' {area} ')
+    return Response([
+        {**PlaceSerializer(p).data, 'predicted_rating': f'{guess:.1f}' if guess is not None else None}
+        for p, guess in recommend.recommend(request.user, candidates)
+    ])
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def user_profile(request, user_id):
+    """다른 사용자 프로필: 닉네임, 평가·팔로워·팔로잉 수, 최근 평가한 곳 (아이디는 공개하지 않는다)"""
+    person = get_object_or_404(User, pk=user_id, is_active=True)
+    reviews = person.reviews.order_by('-updated_at')
+    return Response({
+        'id': person.id,
+        'nickname': person.nickname,
+        'counts': {
+            'reviews': reviews.count(),
+            'followers': person.followers.count(),
+            'following': person.following.count(),
+        },
+        'is_following': request.user.is_authenticated and person.followers.filter(follower=request.user).exists(),
+        # 가장 자주 고른 키워드 하나 (프로필 소개 줄)
+        'top_tag': next(iter(Counter(t for tags in reviews.values_list('tags', flat=True) for t in tags).most_common(1)), (None,))[0],
+        'reviews': [rated_place(r) for r in reviews[:24]],
+    })
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def follow(request, user_id):
+    """팔로우(POST) / 언팔로우(DELETE)"""
+    person = get_object_or_404(User, pk=user_id, is_active=True)
+    if person == request.user:
+        return Response({'detail': '나를 팔로우할 수는 없어요.'}, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'POST':
+        Follow.objects.get_or_create(follower=request.user, following=person)
+    else:
+        Follow.objects.filter(follower=request.user, following=person).delete()
+    return Response({'is_following': request.method == 'POST', 'followers': person.followers.count()})
 
 
 @api_view(['GET'])

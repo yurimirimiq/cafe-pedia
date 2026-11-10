@@ -286,7 +286,7 @@ a { color: inherit; text-decoration: none; }
 :root { --ok: #2f6b4f; --okbg: #e6f0ea; }
 .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--ok); background: var(--okbg); border-radius: 999px; padding: 3px 9px; vertical-align: 2px; }
 .badge::before { content: '✓'; }
-.rv strong + .badge { margin-left: 6px; }
+.rv strong + .badge, .rv a + .badge { margin-left: 6px; }
 .rv .meta { font-size: 13px; color: var(--mute); margin-top: 2px; }
 .place-hero .scores { text-align: right; }
 .place-hero .scores small { display: block; margin-top: 10px; font-size: 15px; font-weight: 600; }
@@ -314,3 +314,79 @@ a { color: inherit; text-decoration: none; }
   .receipt-box .btn { width: 100%; }
   .verified-sum .vs { margin-left: 0; }
 }
+
+/* 취향 추천 · 취향 분석 · 팔로우 (시안: docs/mockup-taste.html) */
+/* 예상 별점은 속이 빈 숫자: 가서 별점을 남기면 꽉 찬 숫자(.score)로 바뀐다 */
+.guess { font-family: var(--display); font-weight: 800; line-height: 0.82; letter-spacing: -0.03em; color: transparent; -webkit-text-stroke: 2px #fff; filter: drop-shadow(0 1px 10px rgba(34, 26, 21, 0.35)); }
+.card .guess { font-size: 56px; }
+.card-photo { justify-content: space-between; }
+.card-avg { color: #fff; font-size: 13px; font-weight: 600; text-align: right; line-height: 1.35; opacity: 0.92; }
+.card .by { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--mute); }
+.card .by .avatar { width: 24px; height: 24px; font-size: 12px; background: var(--oat); color: var(--brown); }
+.card .by + h3 { margin-top: 6px; }
+
+.guess-box { display: flex; align-items: center; gap: 16px; margin-top: 20px; padding: 16px 20px; border-radius: 16px; background: var(--oat); }
+.guess-box .guess { font-size: 56px; -webkit-text-stroke: 1.8px var(--brown); filter: none; }
+.guess-box b { display: block; font-size: 15px; }
+.guess-box div > span { display: block; font-size: 14px; color: var(--mute); margin-top: 3px; line-height: 1.45; }
+
+.search .sec-title { font-size: 20px; font-weight: 800; margin: 32px 0 6px; }
+.recent-row { display: flex; flex-wrap: wrap; gap: 16px 28px; margin-top: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.recent-row a { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 700; min-width: 0; }
+.recent-row small { display: block; font-size: 13px; font-weight: 500; color: var(--mute); margin-top: 2px; }
+.recent-photo { width: 52px; height: 52px; border-radius: 10px; flex: none; }
+.recent-photo.photo::before { display: none; }
+.sec-title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.legend { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+.legend i { font-style: normal; font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1; color: var(--brown); }
+.legend i.hollow { color: transparent; -webkit-text-stroke: 1.5px var(--brown); }
+.legend i:not(:first-child) { margin-left: 12px; }
+
+.follow-counts { margin-top: 6px; font-size: 14px; color: var(--mute); }
+.follow-counts b { color: var(--ink); }
+.shelf-tabs { margin: 4px 0 20px; }
+.taste { margin-top: 32px; }
+.taste .lead { font-size: 15px; line-height: 1.55; }
+.scale { position: relative; height: 104px; margin: 14px 0 4px; }
+.scale .bar, .scale .span { position: absolute; top: 48px; height: 4px; border-radius: 2px; }
+.scale .bar { left: 0; right: 0; background: var(--oat); }
+.scale .span { background: var(--brown); }
+.mark { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; font-size: 12px; color: var(--mute); white-space: nowrap; }
+.mark b { font-family: var(--display); font-size: 20px; color: var(--ink); line-height: 1; }
+.mark::after { content: ''; width: 12px; height: 12px; border-radius: 50%; margin-top: 6px; background: #fff; border: 2px solid var(--mute); }
+.mark.self, .mark.self b { color: var(--brown); }
+.mark.self::after { background: var(--brown); border-color: var(--brown); }
+.mark.all { top: 42px; flex-direction: column-reverse; }
+.mark.all::after { margin: 0 0 6px; }
+.taste .tag-counts { margin: 20px 0 16px; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 14px; margin: 0; }
+.facts dt { color: var(--mute); }
+.facts dd { margin: 0; }
+
+.profile-head { display: flex; flex-direction: column; gap: 16px; }
+.me .profile-head h1 { font-size: 28px; margin: 0; }
+.avatar.other { background: var(--oat); color: var(--brown); }
+.btn.wide { width: 100%; }
+@media (max-width: 1000px) {
+  .profile-head { flex-direction: row; align-items: center; }
+  .profile-head .avatar.big { width: 64px; height: 64px; font-size: 26px; }
+}
+@media (max-width: 640px) {
+  .card .guess { font-size: 40px; -webkit-text-stroke-width: 1.6px; }
+  .card-avg { display: none; }
+  .legend { display: none; }
+}
+
+/* 랭킹 */
+.ranking > .muted { margin: -8px 0 20px; font-size: 15px; }
+.filter-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: start; gap: 8px; margin-top: 14px; }
+.filter-row > span { padding-top: 9px; font-size: 14px; font-weight: 700; color: var(--mute); }
+.filter-row > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.ranking .cards { margin-top: 28px; }
+@media (max-width: 640px) {
+  .filter-row { grid-template-columns: 1fr; gap: 6px; }
+  .filter-row > span { padding-top: 0; }
+  .filter-row > div { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .filter-row .chip { flex: none; }
+}
+.sec-head .more { margin-top: 0; }

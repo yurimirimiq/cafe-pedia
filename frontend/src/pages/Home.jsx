@@ -66,7 +66,10 @@ export default function Home() {
 
       {data?.ranking.length > 0 && (
         <section className="sec" id="ranking">
-          <div className="sec-head"><h2>카페피디아 별점 랭킹</h2></div>
+          <div className="sec-head">
+            <h2>카페피디아 별점 랭킹</h2>
+            <Link to={`/ranking${category ? `?category=${category}` : ''}`} className="more">키워드·동네별 랭킹 보기</Link>
+          </div>
           <div className="cards">{data.ranking.slice(0, 8).map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
         </section>
       )}

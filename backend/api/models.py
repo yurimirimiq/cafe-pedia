@@ -130,3 +130,20 @@ class ReviewPhoto(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class Follow(models.Model):
+    """팔로우: follower 가 following 을 따라간다"""
+
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    following = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['follower', 'following'], name='one_follow_per_pair'),
+            models.CheckConstraint(condition=~models.Q(follower=models.F('following')), name='no_self_follow'),
+        ]
+
+    def __str__(self):
+        return f'{self.follower} → {self.following}'

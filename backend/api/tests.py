@@ -82,7 +82,7 @@ class AdminTest(TestCase):
     def test_admin_pages_open(self):
         admin = User.objects.create_superuser(username='admin', password='test-pass-1234', nickname='관리자', email='')
         self.client.force_login(admin)
-        for page in ['user', 'place', 'review', 'wishlist']:
+        for page in ['user', 'place', 'review', 'wishlist', 'follow']:
             res = self.client.get(f'/admin/api/{page}/')
             self.assertEqual(res.status_code, 200, page)
 
@@ -367,7 +367,7 @@ class HomeAndMeApiTest(APITestCase):
     def test_summary(self):
         self.client.force_authenticate(self.me)
         res = self.client.get('/api/me/summary/').json()
-        self.assertEqual(res['counts'], {'reviews': 2, 'comments': 1, 'wishes': 1, 'cafe': 1, 'restaurant': 1})
+        self.assertEqual(res['counts'], {'reviews': 2, 'comments': 1, 'wishes': 1, 'cafe': 1, 'restaurant': 1, 'followers': 0, 'following': 0})
         self.assertEqual(res['distribution']['4.0'], 2)
         self.assertEqual(res['top_rating'], '4.0')
         self.assertEqual({p['my_rating'] for p in res['recent']}, {'4.0'})
@@ -765,3 +765,160 @@ class ReceiptApiTest(APITestCase):
         self.rate()
         fake = SimpleUploadedFile('r.jpg', b'nope', content_type='image/jpeg')
         self.assertEqual(self.client.post(self.url + 'review/receipt/', {'receipt': fake}, format='multipart').status_code, 400)
+
+
+from . import recommend
+from .models import Follow
+
+
+class RecommendTest(APITestCase):
+    def setUp(self):
+        # 1~7번: 마포구 카페 (7번만 디저트카페), 8번: 강남구 카페
+        self.places = [
+            Place.objects.create(
+                kakao_id=str(i), category=Place.Category.CAFE,
+                category_detail='음식점 > 카페 > 디저트카페' if i == 7 else '음식점 > 카페',
+                name=f'카페{i}', address='서울 마포구 망원로 1' if i < 8 else '서울 강남구 역삼로 1', latitude=0, longitude=0,
+            )
+            for i in range(1, 9)
+        ]
+        self.me = self.user('me')
+        self.twin = self.user('twin')  # 나와 취향이 같은 사람
+        self.opposite = self.user('opp')  # 나와 취향이 반대인 사람
+        mine = ['5.0', '4.0', '2.0', '1.0', '3.0']
+        self.rate(self.me, mine)
+        self.rate(self.twin, mine + ['5.0', '1.0'])  # 6번은 좋아하고 7번은 싫어함
+        self.rate(self.opposite, ['1.0', '2.0', '4.0', '5.0', '3.0', '1.0'])
+
+    def user(self, name):
+        return User.objects.create_user(username=name, password='x', nickname=name)
+
+    def rate(self, user, ratings):
+        for place, r in zip(self.places, ratings):
+            Review.objects.create(user=user, place=place, rating=Decimal(r))
+
+    def test_similarity(self):
+        self.assertAlmostEqual(recommend.similarity({1: 5, 2: 1, 3: 3}, {1: 4, 2: 2, 3: 3}, 3, 3), 1.0)
+        self.assertAlmostEqual(recommend.similarity({1: 5, 2: 1, 3: 3}, {1: 1, 2: 5, 3: 3}, 3, 3), -1.0)
+        self.assertIsNone(recommend.similarity({1: 5, 2: 1}, {1: 4, 2: 2}, 3, 3))  # 같이 평가한 곳이 3곳 미만
+
+    def test_predict_uses_similar_people_only(self):
+        p6, p7 = self.places[5].id, self.places[6].id
+        # 반대 취향인 사람이 6번에 1점을 줬지만 무시되고, 같은 취향인 사람의 5점·1점을 따른다
+        self.assertEqual(recommend.predict(self.me), {p6: 5.0, p7: 1.0})
+        self.assertEqual(recommend.predict(self.me, {p6}), {p6: 5.0})
+
+    def test_recommendations_api_and_detail_prediction(self):
+        self.client.force_authenticate(self.me)
+        res = self.client.get('/api/recommendations/').json()
+        self.assertEqual([(p['name'], p['predicted_rating']) for p in res], [('카페6', '5.0')])  # 예상 1.0인 7번은 빠진다
+        self.assertEqual(self.client.get('/api/recommendations/', {'area': '강남구'}).json(), [])
+        self.assertEqual(self.client.get(f'/api/places/{self.places[5].id}/').json()['predicted_rating'], '5.0')
+        # 이미 평가한 곳은 예상 별점이 없다
+        self.assertIsNone(self.client.get(f'/api/places/{self.places[0].id}/').json()['predicted_rating'])
+
+    def test_cold_start_prefers_liked_detail_then_my_area(self):
+        Review.objects.create(user=self.twin, place=self.places[7], rating=Decimal('5.0'))  # 강남 카페, 평균 5.0
+        dessert = Place.objects.create(
+            kakao_id='99', category='CE7', category_detail='음식점 > 카페 > 디저트카페', name='강남 디저트',
+            address='서울 강남구 1', latitude=0, longitude=0,
+        )
+        Review.objects.create(user=self.twin, place=dessert, rating=Decimal('3.0'))
+        new = self.user('new')
+        Review.objects.create(user=new, place=self.places[6], rating=Decimal('4.5'))  # 마포 디저트카페를 좋아함
+        self.client.force_authenticate(new)
+        res = self.client.get('/api/recommendations/').json()
+        self.assertTrue(all(p['predicted_rating'] is None for p in res))  # 평가 5개 미만 → 예상 별점 없음
+        names = [p['name'] for p in res]
+        self.assertNotIn('카페7', names)  # 이미 평가한 곳은 빠진다
+        self.assertEqual(names[0], '강남 디저트')  # 좋아하는 세부 분류가 먼저
+        self.assertEqual(names[-1], '카페8')  # 그다음 자주 가는 동네(마포)가 평균 별점 높은 강남보다 먼저
+
+    def test_requires_login(self):
+        self.assertEqual(self.client.get('/api/recommendations/').status_code, 401)
+
+
+class TasteAndFollowTest(APITestCase):
+    def setUp(self):
+        self.cafe = Place.objects.create(
+            kakao_id='1', category='CE7', category_detail='음식점 > 카페 > 디저트카페', name='카페 온기',
+            address='서울 마포구 망원로 1', latitude=0, longitude=0,
+        )
+        self.me = User.objects.create_user(username='me', password='x', nickname='나')
+        self.friend = User.objects.create_user(username='friend-login-id', password='x', nickname='친구')
+        Review.objects.create(user=self.me, place=self.cafe, rating=Decimal('4.5'), tags=['디저트 맛집', '조용함'])
+        Review.objects.create(user=self.friend, place=self.cafe, rating=Decimal('3.5'), comment='무난')
+
+    def test_taste(self):
+        self.client.force_authenticate(self.me)
+        taste = self.client.get('/api/me/summary/').json()['taste']
+        self.assertEqual(taste['avg'], '4.5')
+        self.assertEqual(taste['everyone_avg'], '4.0')
+        self.assertEqual([t['name'] for t in taste['tags']], ['디저트 맛집', '조용함'])
+        self.assertEqual(taste['details'], [{'name': '디저트카페', 'count': 1}])
+        self.assertEqual(taste['areas'], [{'name': '마포구', 'count': 1}])
+
+    def test_follow_profile_and_feed(self):
+        url = f'/api/users/{self.friend.id}/'
+        self.assertEqual(self.client.post(url + 'follow/').status_code, 401)
+        self.client.force_authenticate(self.me)
+        self.assertEqual(self.client.post(url + 'follow/').json(), {'is_following': True, 'followers': 1})
+        self.client.post(url + 'follow/')  # 두 번 눌러도 하나만
+        self.assertEqual(Follow.objects.count(), 1)
+
+        profile = self.client.get(url).json()
+        self.assertEqual(profile['counts'], {'reviews': 1, 'followers': 1, 'following': 0})
+        self.assertTrue(profile['is_following'])
+        self.assertIsNone(profile['top_tag'])  # 친구는 키워드를 고르지 않았다
+        self.assertEqual(profile['reviews'][0]['rating'], '3.5')
+        self.assertNotIn('friend-login-id', json.dumps(profile))  # 로그인 아이디는 공개하지 않는다
+
+        summary = self.client.get('/api/me/summary/').json()
+        self.assertEqual(summary['counts']['following'], 1)
+        self.assertEqual([(p['name'], p['nickname'], p['rating']) for p in summary['feed']], [('카페 온기', '친구', '3.5')])
+
+        self.assertFalse(self.client.delete(url + 'follow/').json()['is_following'])
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_cannot_follow_self_and_place_reviews_link_user(self):
+        self.client.force_authenticate(self.me)
+        self.assertEqual(self.client.post(f'/api/users/{self.me.id}/follow/').status_code, 400)
+        comments = self.client.get(f'/api/places/{self.cafe.id}/').json()['comments']
+        self.assertEqual(comments[0]['user_id'], self.friend.id)
+        self.assertEqual(self.client.get('/api/users/9999/').status_code, 404)
+
+
+class RankingTest(APITestCase):
+    def setUp(self):
+        def place(kid, name, cat='CE7', addr='서울 마포구 망원로 1'):
+            return Place.objects.create(kakao_id=kid, category=cat, name=name, address=addr, latitude=0, longitude=0)
+
+        self.one_hit = place('1', '한 명만 5점')
+        self.steady = place('2', '꾸준한 4.5', addr='서울 성동구 연무장길 1')
+        self.food = place('3', '국밥집', 'FD6')
+        users = [User.objects.create_user(username=f'u{i}', password='x', nickname=f'u{i}') for i in range(6)]
+        Review.objects.create(user=users[0], place=self.one_hit, rating=Decimal('5.0'))
+        for u in users:
+            Review.objects.create(user=u, place=self.steady, rating=Decimal('4.5'), tags=['조용함'])
+        for u in users[:3]:  # 전체 평균 4.1 (5점·4.5점·3점이 섞여 있다)
+            Review.objects.create(user=u, place=self.food, rating=Decimal('3.0'), tags=['가성비'])
+
+    def names(self, **params):
+        return [p['name'] for p in self.client.get('/api/rankings/', params).json()['places']]
+
+    def test_bayesian_average_beats_single_perfect_score(self):
+        # 단순 평균이면 5.0(1명)이 1등이지만, 평가가 적어 전체 평균 쪽으로 당겨진다
+        self.assertEqual(self.names(), ['꾸준한 4.5', '한 명만 5점', '국밥집'])
+        self.assertEqual(self.client.get('/api/home/').json()['ranking'][0]['name'], '꾸준한 4.5')
+
+    def test_filters(self):
+        self.assertEqual(self.names(category='FD6'), ['국밥집'])
+        self.assertEqual(self.names(tag='조용함'), ['꾸준한 4.5'])
+        self.assertEqual(self.names(area='마포구'), ['한 명만 5점', '국밥집'])
+        self.assertEqual(len(self.names(tag='없는 키워드')), 3)  # 모르는 키워드는 무시
+
+    def test_options(self):
+        res = self.client.get('/api/rankings/', {'category': 'CE7'}).json()
+        self.assertIn('조용함', res['tags'])
+        self.assertNotIn('가성비', res['tags'])
+        self.assertEqual(set(res['areas']), {'마포구', '성동구'})

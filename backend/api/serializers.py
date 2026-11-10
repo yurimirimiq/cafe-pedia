@@ -82,6 +82,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     """다른 사람에게 보여줄 리뷰 (닉네임만 공개)"""
 
     nickname = serializers.CharField(source='user.nickname', read_only=True)
+    user_id = serializers.IntegerField(read_only=True)  # 프로필 링크용
     photos = serializers.SerializerMethodField()
     verified = serializers.SerializerMethodField()
 
@@ -93,7 +94,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'nickname', 'rating', 'comment', 'tags', 'photos', 'verified', 'visited_on', 'updated_at']
+        fields = ['id', 'user_id', 'nickname', 'rating', 'comment', 'tags', 'photos', 'verified', 'visited_on', 'updated_at']
 
 
 class MyReviewSerializer(serializers.ModelSerializer):
