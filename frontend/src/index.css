@@ -409,3 +409,19 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   .menu a { transition: none; }
 }
+
+/* 공유하기 */
+.share { position: relative; }
+.share-icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.share-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; min-width: 200px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 10px 30px rgba(34, 26, 21, 0.12); display: flex; flex-direction: column; }
+.share-menu button { display: flex; align-items: center; gap: 10px; border: 0; background: none; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); padding: 12px 14px; border-radius: 10px; cursor: pointer; text-align: left; }
+.share-menu button:hover, .share-menu button:focus-visible { background: var(--oat); }
+.kakao-dot { width: 20px; height: 20px; border-radius: 6px; background: #fee500; flex: none; }
+.share-toast:empty { display: none; }
+.share-toast { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; white-space: nowrap; background: var(--ink); color: #fff; font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 999px; }
+@media (max-width: 640px) {
+  /* 폰에선 버튼이 셋이라 공유는 아이콘만 */
+  .rate-btns .share .btn { flex: none; width: 46px; padding: 12px 0; }
+  .share-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .share-menu, .share-toast { left: 0; right: auto; }
+}
