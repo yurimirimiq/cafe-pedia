@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from collections import Counter
 
-from .models import MAX_TAGS, TAG_OPTIONS, Place, Review, ReviewPhoto, User
+from .models import MAX_TAGS, TAG_OPTIONS, Collection, Place, Review, ReviewPhoto, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -141,3 +141,41 @@ class MyReviewSerializer(serializers.ModelSerializer):
         if self.instance and self.instance.receipt_verified_at and value != self.instance.visited_on:
             raise serializers.ValidationError('영수증으로 인증된 방문일은 바꿀 수 없어요.')
         return value
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    """컬렉션 카드: 제목·소개, 만든 사람, 담긴 장소 수, 좋아요 수, 앞 장소 5곳의 사진 (place_count·like_count 는 view 가 annotate)"""
+
+    owner = serializers.SerializerMethodField()
+    place_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.IntegerField(read_only=True)
+    liked = serializers.SerializerMethodField()
+    covers = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Collection
+        fields = ['id', 'title', 'description', 'owner', 'place_count', 'like_count', 'liked', 'covers', 'updated_at']
+
+    def get_owner(self, collection):
+        return {'id': collection.user_id, 'nickname': collection.user.nickname}
+
+    def get_liked(self, collection):
+        user = self.context['request'].user
+        return user.is_authenticated and collection.likes.filter(user=user).exists()
+
+    def get_covers(self, collection):
+        photos = PlaceSerializer()
+        # shortcut: 사진마다 리뷰 사진을 한 번씩 찾음 (카드 30개 × 5장), 느려지면 Place 에 대표 사진 칸을 두고 갱신
+        places = [item.place for item in list(collection.items.all())[:5]]
+        return [
+            {'id': p.id, 'name': p.name, 'thumbnail_url': photos.get_thumbnail_url(p), 'thumbnail_fallback': photos.get_thumbnail_fallback(p)}
+            for p in places
+        ]
+
+    def validate_title(self, value):
+        if not value.strip():
+            raise serializers.ValidationError('제목을 입력하세요.')
+        return value.strip()
+
+    def validate_description(self, value):
+        return value.strip()

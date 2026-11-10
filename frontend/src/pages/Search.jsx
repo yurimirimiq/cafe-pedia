@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../api'
 import { useAuth } from '../auth'
+import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
 import { loadRecent } from '../recent'
 import { keywords } from '../components/PlaceCard'
@@ -93,6 +94,7 @@ export default function Search() {
           ))}
         </ul>
       )}
+      {q && <SearchCollections q={q} />}
       <p className="muted small credit">장소 정보 출처: 카카오</p>
     </section>
   )
@@ -145,6 +147,25 @@ function Recommendations({ category }) {
       <div className="grid">
         {list.map((p) => <PlaceCard key={p.id} place={p} predicted={p.predicted_rating ?? undefined} />)}
       </div>
+    </>
+  )
+}
+
+// 검색어가 제목·소개에 들어간 컬렉션 (예: "카공" → 카공하기 좋은 카페)
+function SearchCollections({ q }) {
+  const [list, setList] = useState([])
+  useEffect(() => {
+    let ignore = false
+    apiFetch(`/api/collections/?${new URLSearchParams({ q, sort: 'popular' })}`)
+      .then((rows) => !ignore && setList(rows))
+      .catch(() => !ignore && setList([]))
+    return () => { ignore = true }
+  }, [q])
+  if (!list.length) return null
+  return (
+    <>
+      <h2 className="sec-title">"{q}" 컬렉션</h2>
+      <div className="coll-grid">{list.slice(0, 4).map((c) => <CollectionCard key={c.id} collection={c} />)}</div>
     </>
   )
 }

@@ -33,6 +33,7 @@ export default function Me() {
         <div className="avatar big">{user.nickname[0]}</div>
         <h1>{user.nickname}</h1>
         <p className="follow-counts">팔로워 <b>{counts.followers}</b> · 팔로잉 <b>{counts.following}</b></p>
+        <Link to={`/collections?user=${user.id}`} className="btn small my-coll-link">내 컬렉션</Link>
         <div className="counts">
           <div><b>{counts.reviews}</b><span>평가</span></div>
           <div><b>{counts.comments}</b><span>한 줄 평</span></div>

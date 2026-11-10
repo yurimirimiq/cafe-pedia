@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { mediaUrl } from '../api'
 import { area } from './PlaceCard'
+import useDismiss from './useDismiss'
 
 const KEY = import.meta.env.VITE_KAKAO_JS_KEY
 let sdk // 카카오 공유 스크립트는 한 번만 불러온다 (지도 스크립트와는 별개: window.Kakao)
@@ -27,17 +28,7 @@ export default function ShareButton({ place }) {
   const box = useRef(null)
   const url = `${window.location.origin}/place/${place.id}`
 
-  // 메뉴 바깥을 누르거나 Esc 를 누르면 닫는다
-  useEffect(() => {
-    if (!open) return
-    const close = (e) => (e.key === 'Escape' || (e.type === 'pointerdown' && !box.current.contains(e.target))) && setOpen(false)
-    document.addEventListener('pointerdown', close)
-    document.addEventListener('keydown', close)
-    return () => {
-      document.removeEventListener('pointerdown', close)
-      document.removeEventListener('keydown', close)
-    }
-  }, [open])
+  useDismiss(box, open, () => setOpen(false))
 
   function toggle() {
     if (!open && KEY) loadKakaoShare().catch(() => {}) // 미리 불러 두면 누르자마자 열린다

@@ -151,3 +151,48 @@ class Follow(models.Model):
 
     def __str__(self):
         return f'{self.follower} → {self.following}'
+
+
+MAX_COLLECTIONS = 50  # 한 사람이 만들 수 있는 컬렉션 수
+MAX_COLLECTION_PLACES = 100  # 컬렉션 하나에 담을 수 있는 장소 수
+
+
+class Collection(models.Model):
+    """컬렉션: 사용자가 이름을 붙여 묶은 장소 목록 (예: 카공하기 좋은 카페). 모두에게 공개된다"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='collections')
+    title = models.CharField('제목', max_length=40)
+    description = models.CharField('소개', max_length=200, blank=True)
+    places = models.ManyToManyField(Place, through='CollectionItem', related_name='collections')
+    created_at = models.DateTimeField(auto_now_add=True)
+    # 장소를 담거나 뺄 때도 갱신해서 "최근 순"이 살아 있는 컬렉션 순이 되게 한다
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.title
+
+
+class CollectionItem(models.Model):
+    """컬렉션에 담긴 장소 하나 (담은 순서대로 보여준다)"""
+
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='items')
+    place = models.ForeignKey(Place, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['collection', 'place'], name='one_place_per_collection')]
+        ordering = ['added_at', 'id']
+
+
+class CollectionLike(models.Model):
+    """컬렉션 좋아요"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='collection_likes')
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'collection'], name='one_like_per_collection')]

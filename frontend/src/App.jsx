@@ -1,6 +1,8 @@
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
 import Calendar from './pages/Calendar'
+import Collection from './pages/Collection'
+import Collections from './pages/Collections'
 import Home from './pages/Home'
 import KakaoCallback from './pages/KakaoCallback'
 import Login from './pages/Login'
@@ -91,6 +93,8 @@ function Layout() {
           <Route path="/search" element={<Search />} />
           <Route path="/nearby" element={<Nearby />} />
           <Route path="/ranking" element={<Ranking />} />
+          <Route path="/collections" element={<Collections />} />
+          <Route path="/collections/:id" element={<Collection />} />
           <Route path="/place/:id" element={<Place />} />
           <Route path="/users/:id" element={<UserProfile />} />
           <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />

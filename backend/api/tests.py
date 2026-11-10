@@ -82,7 +82,7 @@ class AdminTest(TestCase):
     def test_admin_pages_open(self):
         admin = User.objects.create_superuser(username='admin', password='test-pass-1234', nickname='관리자', email='')
         self.client.force_login(admin)
-        for page in ['user', 'place', 'review', 'wishlist', 'follow']:
+        for page in ['user', 'place', 'review', 'wishlist', 'follow', 'collection']:
             res = self.client.get(f'/admin/api/{page}/')
             self.assertEqual(res.status_code, 200, page)
 
@@ -960,3 +960,83 @@ class RankingTest(APITestCase):
         self.assertIn('조용함', res['tags'])
         self.assertNotIn('가성비', res['tags'])
         self.assertEqual(set(res['areas']), {'마포구', '성동구'})
+
+
+from .models import Collection, CollectionItem
+
+
+class CollectionTest(APITestCase):
+    def setUp(self):
+        def place(kid, name):
+            return Place.objects.create(kakao_id=kid, category='CE7', name=name, address='서울 마포구 1', latitude=0, longitude=0)
+
+        self.cafes = [place(str(i), f'카페{i}') for i in range(1, 8)]
+        self.me = User.objects.create_user(username='me', password='x', nickname='나')
+        self.other = User.objects.create_user(username='other-login', password='x', nickname='남')
+
+    def create(self, title='카공하기 좋은 카페', **extra):
+        return self.client.post('/api/collections/', {'title': title, **extra}, format='json')
+
+    def test_create_add_places_and_view(self):
+        self.assertEqual(self.create().status_code, 401)
+        self.client.force_authenticate(self.me)
+        res = self.create(title='  카공하기 좋은 카페 ', description='콘센트 많은 곳')
+        self.assertEqual(res.status_code, 201)
+        cid = res.json()['id']
+        self.assertEqual(res.json()['title'], '카공하기 좋은 카페')  # 앞뒤 공백은 지운다
+        for cafe in reversed(self.cafes[:6]):
+            self.client.post(f'/api/collections/{cid}/places/{cafe.id}/')
+        self.client.post(f'/api/collections/{cid}/places/{self.cafes[0].id}/')  # 두 번 담아도 하나
+
+        self.client.force_authenticate(None)  # 다른 사람(로그인 안 함)도 볼 수 있다
+        detail = self.client.get(f'/api/collections/{cid}/').json()
+        self.assertEqual([p['name'] for p in detail['places']], ['카페6', '카페5', '카페4', '카페3', '카페2', '카페1'])  # 담은 순서
+        self.assertEqual(detail['place_count'], 6)
+        self.assertEqual(len(detail['covers']), 5)  # 카드 사진은 앞 5곳
+        self.assertEqual(detail['owner'], {'id': self.me.id, 'nickname': '나'})
+
+    def test_only_owner_can_change(self):
+        c = Collection.objects.create(user=self.other, title='남의 것')
+        self.client.force_authenticate(self.me)
+        self.assertEqual(self.client.post(f'/api/collections/{c.id}/places/{self.cafes[0].id}/').status_code, 404)
+        self.assertEqual(self.client.patch(f'/api/collections/{c.id}/', {'title': 'x'}, format='json').status_code, 403)
+        self.assertEqual(self.client.delete(f'/api/collections/{c.id}/').status_code, 403)
+        self.assertTrue(Collection.objects.filter(pk=c.id).exists())
+
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.patch(f'/api/collections/{c.id}/', {'title': '새 이름'}, format='json').json()['title'], '새 이름')
+        self.assertEqual(self.client.patch(f'/api/collections/{c.id}/', {'title': '   '}, format='json').status_code, 400)
+        self.assertEqual(self.client.delete(f'/api/collections/{c.id}/').status_code, 204)
+
+    def test_browse_search_sort_and_hide_empty(self):
+        quiet = Collection.objects.create(user=self.me, title='조용한 카페')
+        study = Collection.objects.create(user=self.other, title='카공 맛집', description='작업하기 좋음')
+        empty = Collection.objects.create(user=self.me, title='빈 컬렉션')
+        for c in [quiet, study]:
+            CollectionItem.objects.create(collection=c, place=self.cafes[0])
+        self.client.force_authenticate(self.other)
+        self.client.post(f'/api/collections/{quiet.id}/like/')
+
+        titles = lambda **p: [c['title'] for c in self.client.get('/api/collections/', p).json()]
+        self.assertNotIn('빈 컬렉션', titles())  # 빈 컬렉션은 둘러보기에 안 나온다
+        self.assertEqual(titles(sort='popular')[0], '조용한 카페')
+        self.assertEqual(titles(q='작업'), ['카공 맛집'])
+        self.assertEqual(titles(user=str(self.me.id)), ['조용한 카페'])  # 남이 보면 빈 것은 숨김
+        self.client.force_authenticate(self.me)
+        self.assertIn('빈 컬렉션', titles(user=str(self.me.id)))  # 본인에겐 보인다
+        self.assertNotIn('other-login', str(self.client.get('/api/collections/').json()))  # 로그인 아이디는 공개 안 함
+
+    def test_like_and_my_collections_for_place(self):
+        mine = Collection.objects.create(user=self.me, title='내 것')
+        CollectionItem.objects.create(collection=mine, place=self.cafes[0])
+        Collection.objects.create(user=self.me, title='다른 것')
+        self.client.force_authenticate(self.me)
+        self.assertEqual(self.client.post(f'/api/collections/{mine.id}/like/').json(), {'liked': True, 'like_count': 1})
+        self.client.post(f'/api/collections/{mine.id}/like/')
+        self.assertTrue(self.client.get(f'/api/collections/{mine.id}/').json()['liked'])
+        self.assertEqual(self.client.delete(f'/api/collections/{mine.id}/like/').json()['like_count'], 0)
+
+        rows = self.client.get('/api/me/collections/', {'place': self.cafes[0].id}).json()
+        self.assertEqual({r['title']: r['has_place'] for r in rows}, {'내 것': True, '다른 것': False})
+        res = self.client.delete(f'/api/collections/{mine.id}/places/{self.cafes[0].id}/').json()
+        self.assertEqual(res, {'in_collection': False, 'place_count': 0})

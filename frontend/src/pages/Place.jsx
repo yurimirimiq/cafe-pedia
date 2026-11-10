@@ -7,6 +7,7 @@ import PlaceMap from '../components/PlaceMap'
 import { area, keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 import ShareButton from '../components/ShareButton'
+import CollectionPicker from '../components/CollectionPicker'
 import StarRating from '../components/StarRating'
 
 const today = () => new Date().toLocaleDateString('sv') // YYYY-MM-DD (내 컴퓨터 시간 기준)
@@ -169,6 +170,7 @@ export default function Place() {
             </div>
             <div className="rate-btns">
               <ShareButton place={place} />
+              <CollectionPicker place={place} />
               <button className="btn" onClick={toggleWish} aria-pressed={place.wished}>{place.wished ? '가고 싶어요 ✓' : '가고 싶어요'}</button>
               <button className="btn dark" onClick={openComment}>{mine?.comment || mine?.photos.length ? '한 줄 평 고치기' : '한 줄 평 쓰기'}</button>
             </div>

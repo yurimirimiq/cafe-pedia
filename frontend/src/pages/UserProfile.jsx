@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../api'
 import { useAuth } from '../auth'
+import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
 
 // 다른 사용자의 프로필: 평가 수·팔로워·팔로잉, 팔로우 버튼, 최근 평가한 곳
@@ -12,12 +13,14 @@ export default function UserProfile() {
   const [person, setPerson] = useState(null)
   const [status, setStatus] = useState('loading')
   const [busy, setBusy] = useState(false)
+  const [colls, setColls] = useState([])
 
   useEffect(() => {
     setStatus('loading')
     apiFetch(`/api/users/${id}/`)
       .then((p) => { setPerson(p); setStatus('done') })
       .catch((err) => setStatus(err.status === 404 ? 'notfound' : 'error'))
+    apiFetch(`/api/collections/?user=${id}`).then(setColls).catch(() => setColls([]))
   }, [id, user])
 
   async function toggleFollow() {
@@ -58,6 +61,12 @@ export default function UserProfile() {
       </aside>
 
       <div>
+        {colls.length > 0 && (
+          <>
+            <h2>{person.nickname}님의 컬렉션</h2>
+            <div className="coll-grid profile-colls">{colls.map((c) => <CollectionCard key={c.id} collection={c} />)}</div>
+          </>
+        )}
         <h2>{person.nickname}님이 평가한 곳</h2>
         {person.reviews.length ? (
           <div className="grid">{person.reviews.map((p) => <PlaceCard key={p.id} place={p} rating={p.rating} label={`${person.nickname}님의 별점`} />)}</div>

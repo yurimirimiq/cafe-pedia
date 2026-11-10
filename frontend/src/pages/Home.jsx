@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../api'
+import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
 import Poster from '../components/Poster'
 
@@ -90,6 +91,8 @@ export default function Home() {
         </section>
       )}
 
+      <PopularCollections />
+
       {data?.recent.length > 0 && (
         <section className="sec">
           <div className="sec-head"><h2>방금 별점이 남겨진 곳</h2></div>
@@ -97,5 +100,21 @@ export default function Home() {
         </section>
       )}
     </div>
+  )
+}
+
+// 사람들이 만든 컬렉션 (좋아요 많은 순 3개)
+function PopularCollections() {
+  const [list, setList] = useState([])
+  useEffect(() => { apiFetch('/api/collections/?sort=popular').then(setList).catch(() => {}) }, [])
+  if (!list.length) return null
+  return (
+    <section className="sec">
+      <div className="sec-head">
+        <h2>사람들이 만든 컬렉션</h2>
+        <Link to="/collections" className="more">컬렉션 더 보기</Link>
+      </div>
+      <div className="coll-grid">{list.slice(0, 3).map((c) => <CollectionCard key={c.id} collection={c} />)}</div>
+    </section>
   )
 }

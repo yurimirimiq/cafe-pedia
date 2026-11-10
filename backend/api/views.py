@@ -5,20 +5,24 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.cache import cache
 from django.db import IntegrityError
-from django.db.models import Avg, Count, F as models_f, FloatField, Max, Q, Sum
+from django.db.models import Avg, Count, F as models_f, FloatField, Max, Prefetch, Q, Sum
 from django.db.models.functions import Cast
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import kakao, photos, receipts, recommend
-from .models import MAX_PHOTOS, TAG_OPTIONS, Follow, Place, Review, ReviewPhoto, User, Wishlist
+from .models import (
+    MAX_COLLECTION_PLACES, MAX_COLLECTIONS, MAX_PHOTOS, TAG_OPTIONS,
+    Collection, CollectionItem, CollectionLike, Follow, Place, Review, ReviewPhoto, User, Wishlist,
+)
 from .serializers import (
+    CollectionSerializer,
     MyReviewSerializer,
     PlaceSerializer,
     ReviewSerializer,
@@ -600,3 +604,100 @@ def my_review_receipt(request, place_id):
     except IntegrityError:  # 같은 영수증 지문이 이미 있음
         return Response({'detail': '이미 다른 리뷰 인증에 쓰인 영수증이에요.', 'check': check}, status=status.HTTP_400_BAD_REQUEST)
     return Response({'check': check, 'my_review': MyReviewSerializer(review).data})
+
+
+def collections_qs():
+    """컬렉션 + 담긴 장소 수 + 좋아요 수 (카드 사진용 장소는 한 번에 불러 둔다)"""
+    return Collection.objects.select_related('user').prefetch_related(
+        Prefetch('items', queryset=CollectionItem.objects.select_related('place'))
+    ).annotate(place_count=Count('items', distinct=True), like_count=Count('likes', distinct=True))
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def collections(request):
+    """컬렉션 둘러보기: ?q=카공&user=3&sort=popular|recent / 만들기(POST {title, description})"""
+    ctx = {'request': request}
+    if request.method == 'POST':
+        if request.user.collections.count() >= MAX_COLLECTIONS:
+            return Response({'detail': f'컬렉션은 {MAX_COLLECTIONS}개까지 만들 수 있어요.'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = CollectionSerializer(data=request.data, context=ctx)
+        serializer.is_valid(raise_exception=True)
+        created = serializer.save(user=request.user)
+        return Response(CollectionSerializer(collections_qs().get(pk=created.pk), context=ctx).data, status=status.HTTP_201_CREATED)
+
+    qs = collections_qs()
+    if q := request.query_params.get('q', '').strip()[:40]:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+    owner = request.query_params.get('user', '')
+    if owner.isdigit():
+        qs = qs.filter(user_id=int(owner))
+    # 빈 컬렉션은 만든 사람 본인에게만 보인다
+    if not (owner.isdigit() and int(owner) == request.user.id):
+        qs = qs.filter(place_count__gt=0)
+    order = ['-like_count', '-updated_at'] if request.query_params.get('sort') == 'popular' else ['-updated_at']
+    return Response(CollectionSerializer(qs.order_by(*order)[:30], many=True, context=ctx).data)
+
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def collection_detail(request, collection_id):
+    """컬렉션 하나: 담긴 장소(담은 순서) / 제목·소개 고치기(PATCH) / 지우기(DELETE). 고치고 지우기는 만든 사람만"""
+    ctx = {'request': request}
+    collection = get_object_or_404(collections_qs(), pk=collection_id)
+    if request.method != 'GET' and collection.user_id != request.user.id:
+        return Response({'detail': '내 컬렉션만 고칠 수 있어요.'}, status=status.HTTP_403_FORBIDDEN)
+    if request.method == 'DELETE':
+        collection.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    if request.method == 'PATCH':
+        serializer = CollectionSerializer(collection, data=request.data, partial=True, context=ctx)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        collection = collections_qs().get(pk=collection_id)
+
+    ids = list(collection.items.values_list('place_id', flat=True))
+    fill_thumbnails(Place.objects.filter(pk__in=ids, thumbnail_checked_at__isnull=True))
+    by_id = {p.id: p for p in with_ratings(Place.objects.filter(pk__in=ids))}
+    return Response({
+        **CollectionSerializer(collection, context=ctx).data,
+        'places': PlaceSerializer([by_id[i] for i in ids], many=True).data,
+    })
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def collection_place(request, collection_id, place_id):
+    """내 컬렉션에 장소 담기(POST) / 빼기(DELETE). 남의 컬렉션은 404"""
+    collection = get_object_or_404(Collection, pk=collection_id, user=request.user)
+    place = get_object_or_404(Place, pk=place_id)
+    if request.method == 'POST':
+        if not collection.items.filter(place=place).exists() and collection.items.count() >= MAX_COLLECTION_PLACES:
+            return Response({'detail': f'컬렉션 하나에 {MAX_COLLECTION_PLACES}곳까지 담을 수 있어요.'}, status=status.HTTP_400_BAD_REQUEST)
+        CollectionItem.objects.get_or_create(collection=collection, place=place)
+    else:
+        collection.items.filter(place=place).delete()
+    collection.save(update_fields=['updated_at'])
+    return Response({'in_collection': request.method == 'POST', 'place_count': collection.items.count()})
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def collection_like(request, collection_id):
+    """컬렉션 좋아요(POST) / 취소(DELETE)"""
+    collection = get_object_or_404(Collection, pk=collection_id)
+    if request.method == 'POST':
+        CollectionLike.objects.get_or_create(user=request.user, collection=collection)
+    else:
+        CollectionLike.objects.filter(user=request.user, collection=collection).delete()
+    return Response({'liked': request.method == 'POST', 'like_count': collection.likes.count()})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_collections(request):
+    """장소 상세의 "컬렉션에 담기" 목록: 내 컬렉션 + ?place= 장소가 이미 담겼는지"""
+    place = request.query_params.get('place', '')
+    rows = request.user.collections.annotate(place_count=Count('items'))
+    has = set(CollectionItem.objects.filter(collection__user=request.user, place_id=place).values_list('collection_id', flat=True)) if place.isdigit() else set()
+    return Response([{'id': c.id, 'title': c.title, 'place_count': c.place_count, 'has_place': c.id in has} for c in rows])

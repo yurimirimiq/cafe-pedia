@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Follow, Place, Review, ReviewPhoto, User, Wishlist
+from .models import Collection, Follow, Place, Review, ReviewPhoto, User, Wishlist
 
 
 @admin.register(User)
@@ -39,3 +39,9 @@ class ReviewPhotoAdmin(admin.ModelAdmin):
 @admin.register(Follow)
 class FollowAdmin(admin.ModelAdmin):
     list_display = ['follower', 'following', 'created_at']
+
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    list_display = ['title', 'user', 'updated_at']
+    search_fields = ['title', 'description', 'user__nickname']
