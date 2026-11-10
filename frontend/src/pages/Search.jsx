@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
@@ -28,7 +28,7 @@ export default function Search() {
     setState((s) => ({ ...s, status: 'loading' }))
     apiFetch(`/api/places/search/?${new URLSearchParams({ q, ...(category && { category }) })}`)
       .then((places) => !ignore && setState({ status: 'done', places }))
-      .catch((err) => !ignore && setState({ status: 'error', places: [], message: err.data?.detail }))
+      .catch((err) => !ignore && setState({ status: 'error', places: [], message: errorText(err, '검색하지 못했어요. 잠시 후 다시 시도하세요.') }))
     return () => { ignore = true }
   }, [q, category])
 
@@ -72,7 +72,7 @@ export default function Search() {
         </>
       )}
       {state.status === 'loading' && <p className="muted">찾는 중…</p>}
-      {state.status === 'error' && <p className="error" role="alert">{state.message ?? '검색하지 못했어요. 잠시 후 다시 시도하세요.'}</p>}
+      {state.status === 'error' && <p className="error" role="alert">{state.message}</p>}
       {state.status === 'done' && state.places.length === 0 && (
         <p className="muted">"{q}"에 맞는 카페·식당이 없어요. 동네 이름을 붙여서 다시 찾아보세요.</p>
       )}

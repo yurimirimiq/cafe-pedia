@@ -1,4 +1,5 @@
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { Component } from 'react'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
 import Calendar from './pages/Calendar'
 import Collection from './pages/Collection'
@@ -18,6 +19,36 @@ import UserProfile from './pages/UserProfile'
 function RequireAuth({ children }) {
   const { user } = useAuth()
   return user ? children : <Navigate to="/login" replace />
+}
+
+// 화면을 그리다 코드 에러가 나도 흰 화면 대신 안내를 보여준다. 다른 페이지로 가면(key 가 바뀌면) 다시 그린다
+class ErrorBoundary extends Component {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch(error) { console.error(error) }
+  render() {
+    if (!this.state.failed) return this.props.children
+    return (
+      <div className="page notice">
+        <h1>화면을 보여주지 못했어요</h1>
+        <p className="muted">잠시 후 다시 시도하거나 홈으로 돌아가 주세요.</p>
+        <div className="notice-btns">
+          <button className="btn dark" onClick={() => window.location.reload()}>새로고침</button>
+          <Link to="/" className="btn">홈으로</Link>
+        </div>
+      </div>
+    )
+  }
+}
+
+function NotFound() {
+  return (
+    <div className="page notice">
+      <h1>없는 페이지예요</h1>
+      <p className="muted">주소가 바뀌었거나 지워진 페이지일 수 있어요.</p>
+      <div className="notice-btns"><Link to="/" className="btn dark">홈으로</Link></div>
+    </div>
+  )
 }
 
 // 탭 아이콘 (24px 선 아이콘). class "f" 인 부분은 지금 탭일 때 옅게 채운다
@@ -56,7 +87,8 @@ function NavSearch() {
 }
 
 function Layout() {
-  const { user, ready, logout } = useAuth()
+  const { user, ready, expired, dismissExpired, logout } = useAuth()
+  const { pathname } = useLocation()
   // 저장된 토큰을 확인하는 동안 화면이 깜빡이지 않게 잠깐 기다린다
   if (!ready) return null
 
@@ -87,7 +119,15 @@ function Layout() {
           )}
         </div>
       </header>
+      {expired && pathname !== '/login' && (
+        <div className="banner" role="alert">
+          <span>로그인이 만료됐어요. 다시 로그인해 주세요.</span>
+          <Link to="/login" className="btn dark small">로그인</Link>
+          <button className="link small" onClick={dismissExpired} aria-label="안내 닫기">닫기</button>
+        </div>
+      )}
       <main>
+        <ErrorBoundary key={pathname}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
@@ -102,7 +142,9 @@ function Layout() {
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
           <Route path="/auth/kakao" element={<KakaoCallback />} />
           <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
+        </ErrorBoundary>
       </main>
     </>
   )

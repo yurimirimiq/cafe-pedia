@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
@@ -14,6 +14,7 @@ export default function UserProfile() {
   const [status, setStatus] = useState('loading')
   const [busy, setBusy] = useState(false)
   const [colls, setColls] = useState([])
+  const [followError, setFollowError] = useState('')
 
   useEffect(() => {
     setStatus('loading')
@@ -26,9 +27,12 @@ export default function UserProfile() {
   async function toggleFollow() {
     if (!user) return navigate('/login')
     setBusy(true)
+    setFollowError('')
     try {
       const res = await apiFetch(`/api/users/${id}/follow/`, { method: person.is_following ? 'DELETE' : 'POST' })
       setPerson((p) => ({ ...p, is_following: res.is_following, counts: { ...p.counts, followers: res.followers } }))
+    } catch (err) {
+      setFollowError(errorText(err, '팔로우하지 못했어요.'))
     } finally {
       setBusy(false)
     }
@@ -58,6 +62,7 @@ export default function UserProfile() {
         <button className={`btn wide${person.is_following ? '' : ' dark'}`} onClick={toggleFollow} disabled={busy} aria-pressed={person.is_following}>
           {person.is_following ? '팔로잉 ✓' : '팔로우'}
         </button>
+        {followError && <p className="error" role="alert">{followError}</p>}
       </aside>
 
       <div>

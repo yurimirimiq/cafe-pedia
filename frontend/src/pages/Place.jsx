@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apiFetch, mediaUrl } from '../api'
+import { apiFetch, errorText, mediaUrl } from '../api'
 import { saveRecent } from '../recent'
 import { useAuth } from '../auth'
 import PlaceMap from '../components/PlaceMap'
@@ -11,10 +11,6 @@ import CollectionPicker from '../components/CollectionPicker'
 import StarRating from '../components/StarRating'
 
 const today = () => new Date().toLocaleDateString('sv') // YYYY-MM-DD (내 컴퓨터 시간 기준)
-
-// 서버 에러 {필드: [메시지]} 를 한 줄로
-const errorText = (err) =>
-  err.data && typeof err.data === 'object' ? Object.values(err.data).flat().join(' ') : '저장하지 못했어요. 잠시 후 다시 시도하세요.'
 
 export default function Place() {
   const { id } = useParams()
@@ -47,7 +43,7 @@ export default function Place() {
       setPlace((p) => ({ ...p, ...res }))
       return true
     } catch (err) {
-      setError(errorText(err))
+      setError(errorText(err, '저장하지 못했어요. 잠시 후 다시 시도하세요.'))
       return false
     } finally {
       setBusy(false)
@@ -67,15 +63,25 @@ export default function Place() {
     const mine = place.my_review
     const extra = mine && (mine.comment || mine.photos.length || mine.tags.length || mine.verified)
     if (extra && !window.confirm('별점을 지우면 한 줄 평, 사진, 키워드, 영수증 인증도 함께 지워져요. 지울까요?')) return
-    const res = await apiFetch(`/api/places/${id}/review/`, { method: 'DELETE' })
-    setPlace((p) => ({ ...p, ...res }))
-    load() // 한 줄 평 목록도 갱신
+    setError('')
+    try {
+      const res = await apiFetch(`/api/places/${id}/review/`, { method: 'DELETE' })
+      setPlace((p) => ({ ...p, ...res }))
+      load() // 한 줄 평 목록도 갱신
+    } catch (err) {
+      setError(errorText(err, '평가를 지우지 못했어요.'))
+    }
   }
 
   async function toggleWish() {
     if (!user) return navigate('/login')
-    const res = await apiFetch(`/api/places/${id}/wish/`, { method: place.wished ? 'DELETE' : 'POST' })
-    setPlace((p) => ({ ...p, ...res }))
+    setError('')
+    try {
+      const res = await apiFetch(`/api/places/${id}/wish/`, { method: place.wished ? 'DELETE' : 'POST' })
+      setPlace((p) => ({ ...p, ...res }))
+    } catch (err) {
+      setError(errorText(err, '가고 싶어요를 저장하지 못했어요.'))
+    }
   }
 
   // 이미지 검색으로 가져온 대표 사진이 엉뚱하면 숨기고 다음 후보로 바꾼다
@@ -86,7 +92,7 @@ export default function Place() {
       const res = await apiFetch(`/api/places/${id}/photo/report/`, { method: 'POST' })
       setPlace((p) => ({ ...p, ...res }))
     } catch (err) {
-      setError(err.data?.detail ?? '사진을 바꾸지 못했어요. 잠시 후 다시 시도하세요.')
+      setError(errorText(err, '사진을 바꾸지 못했어요. 잠시 후 다시 시도하세요.'))
     } finally {
       setBusy(false)
     }
@@ -111,8 +117,12 @@ export default function Place() {
   }
 
   async function deletePhoto(photoId) {
-    const res = await apiFetch(`/api/places/${id}/review/photos/${photoId}/`, { method: 'DELETE' })
-    setPlace((p) => ({ ...p, ...res }))
+    try {
+      const res = await apiFetch(`/api/places/${id}/review/photos/${photoId}/`, { method: 'DELETE' })
+      setPlace((p) => ({ ...p, ...res }))
+    } catch (err) {
+      setError(errorText(err, '사진을 지우지 못했어요.'))
+    }
   }
 
   // 한 줄 평 저장 → 새 사진이 있으면 이어서 올린다
@@ -127,7 +137,7 @@ export default function Place() {
         await apiFetch(`/api/places/${id}/review/photos/`, { method: 'POST', body: form })
       } catch (err) {
         setBusy(false)
-        return setError(err.data?.detail ?? '사진을 올리지 못했어요.')
+        return setError(errorText(err, '사진을 올리지 못했어요.'))
       }
       setBusy(false)
     }
@@ -340,7 +350,7 @@ function ReceiptBox({ place, user, onVerified }) {
       setState({ status: 'done', check: res.check })
       onVerified()
     } catch (err) {
-      setState({ status: 'fail', detail: err.data?.detail ?? '영수증을 확인하지 못했어요.', check: err.data?.check })
+      setState({ status: 'fail', detail: errorText(err, '영수증을 확인하지 못했어요.'), check: err.data?.check })
     }
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
 import Poster from '../components/Poster'
@@ -15,14 +15,14 @@ export default function Home() {
   const [params, setParams] = useSearchParams()
   const category = params.get('category') ?? ''
   const [data, setData] = useState(null)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState('')
   const [areaName, setAreaName] = useState(null)
 
   useEffect(() => {
-    setError(false)
+    setError('')
     apiFetch(`/api/home/${category ? `?category=${category}` : ''}`)
       .then(setData)
-      .catch(() => setError(true))
+      .catch((err) => setError(errorText(err)))
   }, [category])
 
   const area = data?.areas.find((a) => a.name === areaName) ?? data?.areas[0]
@@ -63,15 +63,21 @@ export default function Home() {
         )}
       </section>
 
-      {error && <p className="error page" role="alert">불러오지 못했어요. 잠시 후 다시 시도하세요.</p>}
+      {error && <p className="error page" role="alert">불러오지 못했어요. {error}</p>}
 
-      {data?.ranking.length > 0 && (
+      {data && (
         <section className="sec" id="ranking">
           <div className="sec-head">
             <h2>카페피디아 별점 랭킹</h2>
-            <Link to={`/ranking${category ? `?category=${category}` : ''}`} className="more">키워드·동네별 랭킹 보기</Link>
+            {data.ranking.length > 0 && <Link to={`/ranking${category ? `?category=${category}` : ''}`} className="more">키워드·동네별 랭킹 보기</Link>}
           </div>
-          <div className="cards">{data.ranking.slice(0, 8).map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
+          {data.ranking.length > 0 ? (
+            <div className="cards fit">{data.ranking.slice(0, 8).map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>
+          ) : (
+            <p className="muted empty">
+              아직 평가가 없어요. 다녀온 곳을 찾아 첫 별점을 남겨 보세요. <Link to="/search" className="rating">검색하러 가기</Link>
+            </p>
+          )}
         </section>
       )}
 
@@ -85,7 +91,7 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div className="cards">{area.places.slice(0, 8).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
+          <div className="cards fit">{area.places.slice(0, 8).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
           <Link to={`/search?q=${area.name} ${word}`} className="more">{short(area.name)} {word} 더 보기</Link>
           <p className="muted small credit">동네별 목록은 카카오 장소 검색 결과 순서예요.</p>
         </section>
@@ -96,7 +102,7 @@ export default function Home() {
       {data?.recent.length > 0 && (
         <section className="sec">
           <div className="sec-head"><h2>방금 별점이 남겨진 곳</h2></div>
-          <div className="cards">{data.recent.slice(0, 4).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
+          <div className="cards fit">{data.recent.slice(0, 4).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
         </section>
       )}
     </div>

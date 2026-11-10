@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import useDismiss from './useDismiss'
 
@@ -16,7 +16,7 @@ export default function CollectionPicker({ place }) {
   const [error, setError] = useState('')
   useDismiss(box, open, () => setOpen(false))
 
-  const load = () => apiFetch(`/api/me/collections/?place=${place.id}`).then(setRows).catch(() => setRows([]))
+  const load = () => apiFetch(`/api/me/collections/?place=${place.id}`).then(setRows).catch((err) => { setRows([]); setError(errorText(err, '컬렉션을 불러오지 못했어요.')) })
 
   function toggleOpen() {
     if (!user) return navigate('/login')
@@ -31,7 +31,7 @@ export default function CollectionPicker({ place }) {
       const res = await apiFetch(`/api/collections/${row.id}/places/${place.id}/`, { method: row.has_place ? 'DELETE' : 'POST' })
       setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, has_place: res.in_collection, place_count: res.place_count } : r)))
     } catch (err) {
-      setError(err.data?.detail ?? '담지 못했어요. 잠시 후 다시 시도하세요.')
+      setError(errorText(err, '담지 못했어요. 잠시 후 다시 시도하세요.'))
     } finally {
       setBusy(false)
     }
@@ -47,7 +47,7 @@ export default function CollectionPicker({ place }) {
       setTitle('')
       await load()
     } catch (err) {
-      setError(err.data?.detail || Object.values(err.data ?? {}).flat().join(' ') || '만들지 못했어요.')
+      setError(errorText(err, '만들지 못했어요.'))
     } finally {
       setBusy(false)
     }
@@ -63,7 +63,7 @@ export default function CollectionPicker({ place }) {
         <div className="share-menu collect-menu" role="menu" aria-label="컬렉션에 담기">
           <p className="menu-title">컬렉션에 담기</p>
           {rows === null && <p className="muted small menu-note">불러오는 중…</p>}
-          {rows?.length === 0 && <p className="muted small menu-note">아직 컬렉션이 없어요. 이름을 정해 첫 컬렉션을 만들어 보세요.</p>}
+          {rows?.length === 0 && !error && <p className="muted small menu-note">아직 컬렉션이 없어요. 이름을 정해 첫 컬렉션을 만들어 보세요.</p>}
           {rows?.map((r) => (
             <button key={r.id} role="menuitemcheckbox" aria-checked={r.has_place} onClick={() => toggle(r)} disabled={busy}>
               <span className={`check${r.has_place ? ' on' : ''}`} aria-hidden="true">✓</span>

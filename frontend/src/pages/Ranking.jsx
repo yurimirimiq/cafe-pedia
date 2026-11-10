@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import PlaceCard from '../components/PlaceCard'
 
 const CATEGORIES = [
@@ -16,12 +16,12 @@ export default function Ranking() {
   const tag = params.get('tag') ?? ''
   const area = params.get('area') ?? ''
   const [data, setData] = useState(null)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    setError(false)
+    setError('')
     const q = new URLSearchParams({ ...(category && { category }), ...(tag && { tag }), ...(area && { area }) })
-    apiFetch(`/api/rankings/?${q}`).then(setData).catch(() => setError(true))
+    apiFetch(`/api/rankings/?${q}`).then(setData).catch((err) => setError(errorText(err)))
   }, [category, tag, area])
 
   // 같은 칩을 다시 누르면 해제. 분류를 바꾸면 그 분류에 없는 키워드는 지운다
@@ -65,7 +65,7 @@ export default function Ranking() {
         </>
       )}
 
-      {error && <p className="error" role="alert">랭킹을 불러오지 못했어요. 잠시 후 다시 시도하세요.</p>}
+      {error && <p className="error" role="alert">랭킹을 불러오지 못했어요. {error}</p>}
       {data?.places.length === 0 && <p className="muted empty">이 조건에 맞는 평가된 곳이 아직 없어요. 키워드나 동네를 바꿔 보세요.</p>}
       {data?.places.length > 0 && (
         <div className="cards">{data.places.map((p, i) => <PlaceCard key={p.id} place={p} rank={i + 1} />)}</div>

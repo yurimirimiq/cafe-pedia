@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import PlaceCard from '../components/PlaceCard'
 
@@ -12,7 +12,8 @@ export default function Collection() {
   const [c, setC] = useState(null)
   const [status, setStatus] = useState('loading')
   const [editing, setEditing] = useState(null) // { title, description }
-  const [error, setError] = useState('')
+  const [error, setError] = useState('') // 고치기 폼 에러
+  const [actionError, setActionError] = useState('') // 좋아요·지우기·빼기 실패
 
   useEffect(() => {
     apiFetch(`/api/collections/${id}/`)
@@ -28,8 +29,16 @@ export default function Collection() {
 
   async function toggleLike() {
     if (!user) return navigate('/login')
-    const res = await apiFetch(`/api/collections/${id}/like/`, { method: c.liked ? 'DELETE' : 'POST' })
-    setC({ ...c, ...res })
+    await act(async () => {
+      const res = await apiFetch(`/api/collections/${id}/like/`, { method: c.liked ? 'DELETE' : 'POST' })
+      setC((prev) => ({ ...prev, ...res }))
+    }, '좋아요를 저장하지 못했어요.')
+  }
+
+  // 버튼 동작 하나를 실행하고, 실패하면 이유를 보여준다
+  async function act(run, fallback) {
+    setActionError('')
+    try { await run() } catch (err) { setActionError(errorText(err, fallback)) }
   }
 
   async function save(e) {
@@ -39,19 +48,23 @@ export default function Collection() {
       setEditing(null)
       setError('')
     } catch (err) {
-      setError(Object.values(err.data ?? {}).flat().join(' ') || '저장하지 못했어요.')
+      setError(errorText(err, '저장하지 못했어요.'))
     }
   }
 
   async function remove() {
     if (!window.confirm(`"${c.title}" 컬렉션을 지울까요? 담긴 장소 목록도 함께 사라져요.`)) return
-    await apiFetch(`/api/collections/${id}/`, { method: 'DELETE' })
-    navigate(`/collections?user=${user.id}`)
+    await act(async () => {
+      await apiFetch(`/api/collections/${id}/`, { method: 'DELETE' })
+      navigate(`/collections?user=${user.id}`)
+    }, '컬렉션을 지우지 못했어요.')
   }
 
   async function removePlace(placeId) {
-    const res = await apiFetch(`/api/collections/${id}/places/${placeId}/`, { method: 'DELETE' })
-    setC({ ...c, place_count: res.place_count, places: c.places.filter((p) => p.id !== placeId) })
+    await act(async () => {
+      const res = await apiFetch(`/api/collections/${id}/places/${placeId}/`, { method: 'DELETE' })
+      setC((prev) => ({ ...prev, place_count: res.place_count, places: prev.places.filter((p) => p.id !== placeId) }))
+    }, '장소를 빼지 못했어요.')
   }
 
   return (
@@ -86,6 +99,7 @@ export default function Collection() {
         </header>
       )}
 
+      {actionError && <p className="error" role="alert">{actionError}</p>}
       {c.places.length === 0 ? (
         <p className="muted empty">
           {isOwner ? '아직 담긴 곳이 없어요. 장소 상세에서 "담기"를 눌러 채워 보세요. ' : '아직 담긴 곳이 없어요.'}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 
@@ -18,13 +18,19 @@ export default function Collections() {
   const sort = params.get('sort') ?? 'popular'
   const [list, setList] = useState(null)
   const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState('')
   const [form, setForm] = useState(null) // null 이면 닫힘, { title, description }
   const mine = user && owner === String(user.id)
 
   useEffect(() => {
+    let ignore = false
     setList(null)
+    setLoadError('')
     const q = new URLSearchParams({ ...(owner ? { user: owner } : { sort }) })
-    apiFetch(`/api/collections/?${q}`).then(setList).catch(() => setList([]))
+    apiFetch(`/api/collections/?${q}`)
+      .then((rows) => !ignore && setList(rows))
+      .catch((err) => !ignore && setLoadError(errorText(err)))
+    return () => { ignore = true }
   }, [owner, sort, user])
 
   function openForm() {
@@ -39,7 +45,7 @@ export default function Collections() {
       const made = await apiFetch('/api/collections/', { method: 'POST', body: form })
       navigate(`/collections/${made.id}`)
     } catch (err) {
-      setError(err.data?.detail || Object.values(err.data ?? {}).flat().join(' ') || '만들지 못했어요.')
+      setError(errorText(err, '만들지 못했어요.'))
     }
   }
 
@@ -82,7 +88,8 @@ export default function Collections() {
         </div>
       )}
 
-      {list === null && <p className="muted">불러오는 중…</p>}
+      {loadError && <p className="error" role="alert">컬렉션을 불러오지 못했어요. {loadError}</p>}
+      {list === null && !loadError && <p className="muted">불러오는 중…</p>}
       {list?.length === 0 && (
         <p className="muted empty">
           {mine ? '아직 만든 컬렉션이 없어요. 위의 "새 컬렉션 만들기"나 장소 상세의 "담기"로 시작해 보세요.' : '아직 공개된 컬렉션이 없어요.'}

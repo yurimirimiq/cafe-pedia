@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 
@@ -47,7 +47,7 @@ export default function Nearby() {
     setStatus('loading')
     apiFetch(`/api/places/nearby/?${new URLSearchParams({ ...coords, radius, ...(category && { category }) })}`)
       .then((data) => { if (!ignore) { setPlaces(data); setStatus('done') } })
-      .catch((err) => { if (!ignore) { setStatus('error'); setMessage(err.data?.detail ?? '주변을 찾지 못했어요. 잠시 후 다시 시도하세요.') } })
+      .catch((err) => { if (!ignore) { setStatus('error'); setMessage(errorText(err, '주변을 찾지 못했어요. 잠시 후 다시 시도하세요.')) } })
     return () => { ignore = true }
   }, [coords, radius, category])
 

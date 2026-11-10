@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import Poster from '../components/Poster'
 
 const FILTERS = [
@@ -14,12 +14,16 @@ export default function Calendar() {
   const [ym, setYm] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 })
   const [category, setCategory] = useState('')
   const [visits, setVisits] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    let ignore = false // 달을 빨리 넘겼을 때 늦게 온 이전 달 결과를 무시
     setVisits(null)
+    setError('')
     apiFetch(`/api/me/calendar/?${new URLSearchParams({ ...ym, ...(category && { category }) })}`)
-      .then(setVisits)
-      .catch(() => setVisits([]))
+      .then((v) => !ignore && setVisits(v))
+      .catch((err) => !ignore && setError(errorText(err)))
+    return () => { ignore = true }
   }, [ym, category])
 
   const move = (d) => setYm(({ year, month }) => {
@@ -69,6 +73,7 @@ export default function Calendar() {
           </div>
         ))}
       </div>
+      {error && <p className="error" role="alert">기록을 불러오지 못했어요. {error}</p>}
       {visits?.length === 0 && <p className="muted">이 달에 남긴 기록이 없어요. 다녀온 곳을 검색해서 별점과 방문일을 남겨 보세요.</p>}
     </section>
   )

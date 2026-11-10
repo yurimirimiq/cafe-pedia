@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 
 // 카카오 로그인 후 돌아오는 페이지: ?code=...&state=... 를 서버에 보내 우리 토큰으로 바꾼다
@@ -24,7 +24,7 @@ export default function KakaoCallback() {
     apiFetch('/api/auth/kakao/', { method: 'POST', body: { code: params.get('code') } })
       .then(loginWithTokens)
       .then(() => navigate('/', { replace: true }))
-      .catch((err) => setError(err.data?.detail ?? '카카오 로그인에 실패했어요.'))
+      .catch((err) => setError(errorText(err, '카카오 로그인에 실패했어요.')))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

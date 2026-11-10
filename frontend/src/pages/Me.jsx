@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiFetch } from '../api'
+import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import PlaceCard from '../components/PlaceCard'
 
@@ -19,8 +19,10 @@ export default function Me() {
   const { user } = useAuth()
   const [data, setData] = useState(null)
   const [shelf, setShelf] = useState('recent')
+  const [error, setError] = useState('')
 
-  useEffect(() => { apiFetch('/api/me/summary/').then(setData) }, [])
+  useEffect(() => { apiFetch('/api/me/summary/').then(setData).catch((err) => setError(errorText(err))) }, [])
+  if (error) return <p className="page error" role="alert">나의 기록을 불러오지 못했어요. {error}</p>
   if (!data) return <p className="page muted">불러오는 중…</p>
 
   const { counts, distribution, top_rating: top, taste } = data
@@ -47,6 +49,7 @@ export default function Me() {
           ))}
         </div>
         <div className="dist-axis muted small"><span>0.5</span><span>5.0</span></div>
+        {counts.reviews === 0 && <p className="muted small">아직 별점이 없어요. 첫 별점을 남기면 분포가 그려져요.</p>}
 
         {taste && <Taste taste={taste} />}
       </aside>

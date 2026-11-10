@@ -51,10 +51,27 @@ export async function apiFetch(path, { method = 'GET', body } = {}) {
       body: body instanceof FormData ? body : body && JSON.stringify(body),
     })
 
+  const hadToken = Boolean(tokens.access)
   let res = await send()
   if (res.status === 401 && tokens.refresh && (await refreshAccess())) res = await send()
+  // 새 토큰도 못 받으면 로그인이 만료된 것: 토큰을 지우고 앱에 알린다 (auth.jsx 가 로그아웃 처리)
+  if (res.status === 401 && hadToken) {
+    tokens.clear()
+    window.dispatchEvent(new Event('auth:expired'))
+  }
 
   const data = await res.json().catch(() => null)
   if (!res.ok) throw new ApiError(res.status, data)
   return data
+}
+
+// 에러를 사람이 읽을 한 줄로: 서버가 준 이유 → 로그인 만료 → 서버 연결 실패 → fallback
+export function errorText(err, fallback = '잠시 후 다시 시도하세요.') {
+  if (!(err instanceof ApiError)) return '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.'
+  if (err.status === 401) return '로그인이 만료됐어요. 다시 로그인해 주세요.'
+  const d = err.data
+  if (d?.detail) return d.detail
+  // DRF 검사 에러 {필드: [메시지]} (중첩될 수도 있음) 에서 글자만 모은다
+  const msgs = d && typeof d === 'object' ? Object.values(d).flat(Infinity).filter((m) => typeof m === 'string') : []
+  return msgs.length ? msgs.join(' ') : fallback
 }
