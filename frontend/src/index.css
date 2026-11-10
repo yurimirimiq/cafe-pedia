@@ -50,6 +50,7 @@ a { color: inherit; text-decoration: none; }
 .menu a { color: var(--mute); }
 .menu a.active { color: var(--ink); font-weight: 700; }
 .mobile-only { display: none; }
+.tab-icon { display: none; }
 .nav-right { display: flex; align-items: center; gap: 14px; font-size: 14px; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--brown); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
@@ -248,18 +249,26 @@ a { color: inherit; text-decoration: none; }
   .me { grid-template-columns: 1fr; gap: 28px; }
 }
 
-/* 좁은 화면(폰): 상단 검색창·메뉴 대신 화면 아래 떠 있는 검은 탭 바 */
+/* 좁은 화면(폰): 상단 검색창·메뉴 대신 화면 아래 떠 있는 라떼색 탭 바 (시안: docs/mockup-tabbar.html B안) */
 @media (max-width: 640px) {
   .nav { padding: 16px 20px; gap: 12px; }
   .nav-search { display: none; }
   .nav-right { margin-left: auto; }
   .mobile-only { display: inline; }
   .menu {
-    position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 10;
-    justify-content: space-around; gap: 0; background: var(--ink); border-radius: 999px; padding: 15px 4px; font-size: 13px; font-weight: 600;
+    position: fixed; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 10;
+    height: 62px; padding: 0 8px; justify-content: space-between; align-items: center; gap: 0;
+    background: var(--oat); border-radius: 999px; box-shadow: 0 6px 24px rgba(34, 26, 21, 0.12);
   }
-  .menu a { color: rgba(255, 255, 255, 0.55); }
-  .menu a.active { color: #fff; }
+  .menu a, .menu a.mobile-only {
+    display: flex; align-items: center; justify-content: center; gap: 6px; height: 46px; min-width: 46px; border-radius: 999px;
+    color: var(--mute); font-size: 14px; font-weight: 700; transition: background-color 0.2s, padding 0.2s;
+  }
+  .menu a.active { background: var(--ink); color: #fff; padding: 0 16px; }
+  .tab-icon { display: block; width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .menu a.active .tab-icon .f { fill: currentColor; fill-opacity: 0.16; }
+  /* 지금 탭이 아니면 글자는 화면에서만 숨긴다 (화면 읽기 프로그램은 읽는다) */
+  .menu a:not(.active) .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { padding-bottom: 96px; }
   .hero, .sec, .page, .place-body { padding-left: 20px; padding-right: 20px; }
   .hero { padding-top: 4px; }
@@ -391,3 +400,12 @@ a { color: inherit; text-decoration: none; }
   .filter-row .chip { flex: none; }
 }
 .sec-head .more { margin-top: 0; }
+
+/* 아주 좁은 폰(360px 이하)에서도 탭 5개가 한 줄에 들어가게 */
+@media (max-width: 360px) {
+  .menu a, .menu a.mobile-only { min-width: 40px; }
+  .menu a.active { padding: 0 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu a { transition: none; }
+}

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카페피디아 하단 탭 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap">
+<style>
+:root{--paper:#fff;--ink:#221A15;--brown:#6B3F24;--oat:#F2EDE7;--line:#E3DAD0;--mute:#8A7F77;--crema:#C8A27C;--display:'Bricolage Grotesque',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#EDE8E2;padding:40px;font-family:'Pretendard',sans-serif;color:var(--ink);letter-spacing:-0.02em}
+.row{display:flex;gap:28px;align-items:flex-start}
+.col{width:340px}
+.name{font-size:17px;font-weight:800;margin-bottom:4px}
+.why{font-size:13px;color:var(--mute);line-height:1.5;min-height:58px;margin-bottom:12px}
+.phone{width:340px;height:560px;background:var(--paper);border-radius:32px;overflow:hidden;position:relative}
+
+/* 탭 뒤에 깔리는 화면 (홈 카드 줄) */
+.screen{padding:20px}
+.screen h2{font-size:19px;font-weight:800;letter-spacing:-0.04em;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+.ph{aspect-ratio:4/5;border-radius:14px;display:flex;align-items:flex-end;padding:12px}
+.ph b{font-family:var(--display);font-weight:800;font-size:40px;line-height:.82;letter-spacing:-0.05em;color:#fff}
+.grid h3{font-size:14px;font-weight:700;margin-top:8px}
+.grid p{font-size:12px;color:var(--mute);margin-top:2px}
+.p1{background:radial-gradient(60% 50% at 30% 70%,#C89B6D 0,transparent 70%),radial-gradient(50% 60% at 75% 30%,#F4E9DA 0,transparent 70%),linear-gradient(160deg,#5B3A26,#2E2019)}
+.p4{background:radial-gradient(45% 55% at 35% 45%,#D96F4A 0,transparent 70%),radial-gradient(50% 40% at 70% 75%,#F1D3A8 0,transparent 70%),linear-gradient(170deg,#4A2E22,#8C5638)}
+.p5{background:radial-gradient(55% 55% at 65% 35%,#EFE7DC 0,transparent 70%),radial-gradient(40% 50% at 20% 80%,#6E7F63 0,transparent 70%),linear-gradient(140deg,#B8AC98,#5E5648)}
+.p6{background:radial-gradient(50% 45% at 40% 55%,#FBF6EE 0,transparent 70%),radial-gradient(45% 45% at 80% 20%,#C9A27A 0,transparent 70%),linear-gradient(190deg,#E4D6C3,#B79C7E)}
+
+svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.on svg .f{fill:currentColor;fill-opacity:.16}
+
+/* 지금 */
+.now{position:absolute;left:12px;right:12px;bottom:14px;background:var(--ink);border-radius:999px;display:flex;justify-content:space-around;padding:15px 4px;font-size:13px;font-weight:600;color:rgba(255,255,255,.55)}
+.now .on{color:#fff}
+
+/* A: 밝은 바, 아이콘 + 글자 */
+.a{position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;padding:8px 4px 26px}
+.a span{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--mute)}
+.a .on{color:var(--brown)}
+.a .on em{color:var(--ink);font-weight:800}
+.a em{font-style:normal}
+
+/* B: 떠 있는 라떼색 바, 지금 탭만 글자와 함께 커진다 */
+.b{position:absolute;left:14px;right:14px;bottom:16px;height:62px;background:var(--oat);border-radius:999px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;box-shadow:0 6px 24px rgba(34,26,21,.12)}
+.b span{height:46px;min-width:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--mute);font-size:14px;font-weight:700}
+.b span em{display:none;font-style:normal}
+.b .on{background:var(--ink);color:#fff;padding:0 16px}
+.b .on em{display:inline}
+
+/* C: 지금처럼 진한 바 + 아이콘, 지금 탭은 크레마색 점 */
+.c{position:absolute;left:12px;right:12px;bottom:14px;background:var(--ink);border-radius:26px;display:flex;padding:10px 4px 9px}
+.c span{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:rgba(255,255,255,.5);position:relative}
+.c em{font-style:normal}
+.c .on{color:#fff}
+.c .on::after{content:'';position:absolute;bottom:-6px;width:4px;height:4px;border-radius:50%;background:var(--crema)}
+</style>
+</head>
+<body>
+
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="home" viewBox="0 0 24 24"><path class="f" d="M4 10.5 12 4l8 6.5V19.5a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9V21H5.5A1.5 1.5 0 0 1 4 19.5z"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle class="f" cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="near" viewBox="0 0 24 24"><path class="f" d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect class="f" x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+  <symbol id="me" viewBox="0 0 24 24"><circle class="f" cx="12" cy="8.5" r="3.8"/><path class="f" d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5z"/></symbol>
+</svg>
+
+<div class="row">
+  <div class="col">
+    <p class="name">지금</p>
+    <p class="why">글자만 있고, 지금 어느 탭인지가 흰색·회색 차이뿐이라 잘 안 보여요. 검은 덩어리가 화면 아래를 무겁게 눌러요.</p>
+    <div class="phone">
+      <div class="screen">
+        <h2>요즘 성수에서 많이 가는 카페</h2>
+        <div class="grid">
+          <div><div class="ph p1"><b>4.4</b></div><h3>오후세시 베이크</h3><p>디저트 맛집</p></div>
+          <div><div class="ph p4"><b>4.5</b></div><h3>성수 국밥집</h3><p>혼밥하기 좋음</p></div>
+          <div><div class="ph p6"><b>4.3</b></div><h3>책방 커피</h3><p>작업하기 좋음</p></div>
+          <div><div class="ph p5"><b>4.1</b></div><h3>숲속 로스터스</h3><p>커피전문점</p></div>
+        </div>
+      </div>
+      <nav class="now"><span class="on">홈</span><span>검색</span><span>내 주변</span><span>캘린더</span><span>나의 기록</span></nav>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="name">A. 밝은 바 + 아이콘</p>
+    <p class="why">흰 바탕에 맞춘 가장 조용한 안. 아이콘과 글자가 늘 보여서 처음 온 사람도 헤매지 않아요. 지금 탭은 갈색 아이콘.</p>
+    <div class="phone">
+      <div class="screen">
+        <h2>요즘 성수에서 많이 가는 카페</h2>
+        <div class="grid">
+          <div><div class="ph p1"><b>4.4</b></div><h3>오후세시 베이크</h3><p>디저트 맛집</p></div>
+          <div><div class="ph p4"><b>4.5</b></div><h3>성수 국밥집</h3><p>혼밥하기 좋음</p></div>
+          <div><div class="ph p6"><b>4.3</b></div><h3>책방 커피</h3><p>작업하기 좋음</p></div>
+          <div><div class="ph p5"><b>4.1</b></div><h3>숲속 로스터스</h3><p>커피전문점</p></div>
+        </div>
+      </div>
+      <nav class="a">
+        <span class="on"><svg><use href="#home"/></svg><em>홈</em></span>
+        <span><svg><use href="#search"/></svg><em>검색</em></span>
+        <span><svg><use href="#near"/></svg><em>내 주변</em></span>
+        <span><svg><use href="#cal"/></svg><em>캘린더</em></span>
+        <span><svg><use href="#me"/></svg><em>나의 기록</em></span>
+      </nav>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="name">B. 떠 있는 라떼색 바</p>
+    <p class="why">요즘 앱 느낌. 아이콘만 두고, 지금 탭만 글자와 함께 진한 캡슐로 커져요. 라떼색이라 사진 카드와 잘 어울려요.</p>
+    <div class="phone">
+      <div class="screen">
+        <h2>요즘 성수에서 많이 가는 카페</h2>
+        <div class="grid">
+          <div><div class="ph p1"><b>4.4</b></div><h3>오후세시 베이크</h3><p>디저트 맛집</p></div>
+          <div><div class="ph p4"><b>4.5</b></div><h3>성수 국밥집</h3><p>혼밥하기 좋음</p></div>
+          <div><div class="ph p6"><b>4.3</b></div><h3>책방 커피</h3><p>작업하기 좋음</p></div>
+          <div><div class="ph p5"><b>4.1</b></div><h3>숲속 로스터스</h3><p>커피전문점</p></div>
+        </div>
+      </div>
+      <nav class="b">
+        <span class="on"><svg><use href="#home"/></svg><em>홈</em></span>
+        <span><svg><use href="#search"/></svg><em>검색</em></span>
+        <span><svg><use href="#near"/></svg><em>내 주변</em></span>
+        <span><svg><use href="#cal"/></svg><em>캘린더</em></span>
+        <span><svg><use href="#me"/></svg><em>나의 기록</em></span>
+      </nav>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="name">C. 진한 바 그대로 + 아이콘</p>
+    <p class="why">지금 분위기는 살리고 다듬은 안. 아이콘을 넣고 덜 둥글게, 지금 탭 아래에 크레마색 점을 찍어요.</p>
+    <div class="phone">
+      <div class="screen">
+        <h2>요즘 성수에서 많이 가는 카페</h2>
+        <div class="grid">
+          <div><div class="ph p1"><b>4.4</b></div><h3>오후세시 베이크</h3><p>디저트 맛집</p></div>
+          <div><div class="ph p4"><b>4.5</b></div><h3>성수 국밥집</h3><p>혼밥하기 좋음</p></div>
+          <div><div class="ph p6"><b>4.3</b></div><h3>책방 커피</h3><p>작업하기 좋음</p></div>
+          <div><div class="ph p5"><b>4.1</b></div><h3>숲속 로스터스</h3><p>커피전문점</p></div>
+        </div>
+      </div>
+      <nav class="c">
+        <span class="on"><svg><use href="#home"/></svg><em>홈</em></span>
+        <span><svg><use href="#search"/></svg><em>검색</em></span>
+        <span><svg><use href="#near"/></svg><em>내 주변</em></span>
+        <span><svg><use href="#cal"/></svg><em>캘린더</em></span>
+        <span><svg><use href="#me"/></svg><em>나의 기록</em></span>
+      </nav>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
