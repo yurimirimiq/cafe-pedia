@@ -836,9 +836,24 @@ class RecommendTest(APITestCase):
             Review.objects.create(user=user, place=place, rating=Decimal(r))
 
     def test_similarity(self):
-        self.assertAlmostEqual(recommend.similarity({1: 5, 2: 1, 3: 3}, {1: 4, 2: 2, 3: 3}, 3, 3), 1.0)
-        self.assertAlmostEqual(recommend.similarity({1: 5, 2: 1, 3: 3}, {1: 1, 2: 5, 3: 3}, 3, 3), -1.0)
-        self.assertIsNone(recommend.similarity({1: 5, 2: 1}, {1: 4, 2: 2}, 3, 3))  # 같이 평가한 곳이 3곳 미만
+        # 잔차(별점 - 기준선) 방향이 같으면 1, 반대면 -1. 같이 평가한 곳이 3곳뿐이라 3/(3+10) 으로 깎인다
+        self.assertAlmostEqual(recommend.similarity({1: 2, 2: -2, 3: 0}, {1: 1, 2: -1, 3: 0}), 3 / 13)
+        self.assertAlmostEqual(recommend.similarity({1: 2, 2: -2, 3: 0}, {1: -2, 2: 2, 3: 0}), -3 / 13)
+        self.assertIsNone(recommend.similarity({1: 2, 2: -2}, {1: 1, 2: -1}))  # 같이 평가한 곳이 3곳 미만
+
+    def test_baseline_shrinks_places_with_few_ratings(self):
+        # 5.0 하나짜리 장소(1)는 4.5 넷짜리 장소(2)보다 낮게 본다 (랭킹의 베이지안 평균과 같은 원리)
+        table = {u: {2: 4.5, 3: 2.5} for u in range(4)}  # 3번은 전체 평균을 3점대로 맞추는 용도
+        table[0][1] = 5.0
+        _, _, b_place = recommend.baseline(table)
+        self.assertLess(b_place[1], b_place[2])
+
+    def test_evaluate_neighbors_beat_baseline(self):
+        # 두 취향 무리: 0~3번은 장소 0~4를 좋아하고 5~9를 싫어함, 4~7번은 반대
+        table = {u: {p: (5.0 if (p < 5) == (u < 4) else 1.5) for p in range(10)} for u in range(8)}
+        result = recommend.evaluate(table)
+        self.assertEqual(result['기준선'][1], 80)
+        self.assertLess(result['기준선 + 이웃'][0], result['기준선'][0] / 2)
 
     def test_predict_uses_similar_people_only(self):
         p6, p7 = self.places[5].id, self.places[6].id
