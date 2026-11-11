@@ -265,13 +265,13 @@ a { color: inherit; text-decoration: none; }
   }
   .menu a, .menu a.mobile-only {
     display: flex; align-items: center; justify-content: center; gap: 6px; height: 46px; min-width: 46px; border-radius: 999px;
-    color: var(--mute); font-size: 14px; font-weight: 700; transition: background-color 0.2s, padding 0.2s;
+    color: var(--mute); font-size: 14px; font-weight: 700; transition: background-color 0.2s;
   }
-  .menu a.active { background: var(--ink); color: #fff; padding: 0 16px; }
+  .menu a.active { background: var(--ink); color: #fff; }
   .tab-icon { display: block; width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .menu a.active .tab-icon .f { fill: currentColor; fill-opacity: 0.16; }
-  /* 지금 탭이 아니면 글자는 화면에서만 숨긴다 (화면 읽기 프로그램은 읽는다) */
-  .menu a:not(.active) .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  /* 폰에선 아이콘만. 글자는 화면에서만 숨긴다 (화면 읽기 프로그램은 읽는다) */
+  .menu a .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { padding-bottom: 96px; }
   .hero, .sec, .page, .place-body { padding-left: 20px; padding-right: 20px; }
   .hero { padding-top: 4px; }
@@ -408,7 +408,6 @@ a { color: inherit; text-decoration: none; }
 /* 아주 좁은 폰(360px 이하)에서도 탭 5개가 한 줄에 들어가게 */
 @media (max-width: 360px) {
   .menu a, .menu a.mobile-only { min-width: 40px; }
-  .menu a.active { padding: 0 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .menu a { transition: none; }
