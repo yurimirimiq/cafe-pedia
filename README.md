@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="frontend/public/logo.svg" width="160" alt="카페피디아 로고">
+
 # ☕ cafepedia 🍚
 
 **밥 먹고, 카페 가고, 별점 남기고.**
