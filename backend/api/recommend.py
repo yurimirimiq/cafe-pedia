@@ -3,7 +3,8 @@
 1. 기준선 = 전체 평균 μ + 이 사람의 성향 b_u + 이 장소의 수준 b_i
    - 평가가 적은 장소·사람의 b 는 0 쪽으로 당긴다 (랭킹의 베이지안 평균과 같은 원리)
 2. 별점에서 기준선을 뺀 나머지(잔차)로 피어슨 유사도를 구하고, 같이 평가한 곳이 적으면 n/(n+SIM_SHRINK) 로 깎는다
-3. 예상 별점 = 기준선 + 비슷한 사람들의 잔차를 유사도로 가중 평균한 값. 비슷한 사람이 안 가본 곳은 기준선만
+3. 예상 별점 = 기준선 + 비슷한 사람들의 잔차를 유사도로 가중 평균한 값.
+   비슷한 사람이 아무도 안 가본 곳은 예상 별점을 내지 않는다 — 화면이 "취향이 비슷한 사람들이 높게 준 곳"이라고 말하기 때문
 4. 평가가 MIN_REVIEWS 개 미만이면 예상 별점 대신 세부 분류·동네·평균 별점으로 고른다 (콜드 스타트)
 """
 from collections import Counter, defaultdict
@@ -91,7 +92,7 @@ def predict_from(table, user_id, place_ids=None):
             if place in targets:
                 num[place] += sim * d
                 den[place] += sim
-    return {p: clip(mu + b_user[user_id] + b_place[p] + (num[p] / den[p] if den[p] else 0)) for p in targets}
+    return {p: clip(mu + b_user[user_id] + b_place[p] + num[p] / den[p]) for p in targets if den[p]}
 
 
 def predict(user, place_ids=None):

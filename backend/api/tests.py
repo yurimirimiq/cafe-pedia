@@ -897,6 +897,17 @@ class RecommendTest(APITestCase):
         self.assertEqual(recommend.predict(self.me), {p6: 5.0, p7: 1.0})
         self.assertEqual(recommend.predict(self.me, {p6}), {p6: 5.0})
 
+    def test_no_prediction_where_no_similar_person_went(self):
+        # 반대 취향인 사람만 가 본 곳은 기준선으로 예상 별점을 지어내지 않는다 (콜드 스타트 목록으로 간다)
+        lonely = Place.objects.create(kakao_id='77', category='CE7', category_detail='음식점 > 카페', name='외딴 카페',
+                                      address='서울 마포구 1', latitude=0, longitude=0)
+        Review.objects.create(user=self.opposite, place=lonely, rating=Decimal('5.0'))
+        self.assertNotIn(lonely.id, recommend.predict(self.me))
+        self.client.force_authenticate(self.me)
+        self.assertIsNone(self.client.get(f'/api/places/{lonely.id}/').json()['predicted_rating'])
+        res = {p['name']: p['predicted_rating'] for p in self.client.get('/api/recommendations/').json()}
+        self.assertEqual(res, {'카페6': '5.0', '외딴 카페': None})
+
     def test_recommendations_api_and_detail_prediction(self):
         self.client.force_authenticate(self.me)
         res = self.client.get('/api/recommendations/').json()
