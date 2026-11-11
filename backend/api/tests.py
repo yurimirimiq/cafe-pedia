@@ -24,6 +24,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
 from .models import Place, Review, User, Wishlist
+from .views import TRENDING_AREAS
 
 
 class ModelTest(TestCase):
@@ -371,7 +372,6 @@ class HomeAndMeApiTest(APITestCase):
         self.assertEqual(res['total_reviews'], 3)
         # 같은 평균·평가 수면 이름순
         self.assertEqual([p['name'] for p in res['ranking']], ['달빛 카페', '망원 국밥', '카페 온기'])
-        self.assertIsNotNone(res['featured'])
 
     def test_home_category_filter(self):
         res = self.client.get('/api/home/', {'category': 'FD6'}).json()
@@ -382,7 +382,6 @@ class HomeAndMeApiTest(APITestCase):
         Review.objects.all().delete()
         res = self.client.get('/api/home/').json()
         self.assertEqual(res['ranking'], [])
-        self.assertIsNone(res['featured'])
 
     def test_calendar_month_and_filter(self):
         self.client.force_authenticate(self.me)
@@ -623,7 +622,7 @@ class TrendingAreaTest(APITestCase):
     def test_home_has_area_rows_and_caches_kakao(self, mock):
         mock.side_effect = lambda q, c: [kakao_doc(f'{q}-{i}', f'{q} {i}') for i in range(12)]
         res = self.client.get('/api/home/').json()
-        self.assertEqual([a['name'] for a in res['areas']], ['성수동', '망원동', '연남동', '익선동'])
+        self.assertEqual([a['name'] for a in res['areas']], TRENDING_AREAS)
         self.assertEqual(len(res['areas'][0]['places']), 10)
         mock.assert_any_call('성수동 카페', 'CE7')
         calls = mock.call_count

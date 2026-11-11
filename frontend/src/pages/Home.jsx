@@ -26,8 +26,8 @@ export default function Home() {
   }, [category])
 
   const area = data?.areas.find((a) => a.name === areaName) ?? data?.areas[0]
-  // 큰 사진 자리: 이번 주 가장 많이 평가된 곳, 없으면 고른 동네의 첫 번째 장소
-  const hero = data?.featured ?? area?.places[0]
+  // 큰 사진 자리: 고른 동네에서 별점이 가장 높은 곳, 아직 아무도 평가 안 했으면 카카오 검색 첫 번째
+  const hero = area && ([...area.places].filter((p) => p.avg_rating).sort((a, b) => b.avg_rating - a.avg_rating)[0] ?? area.places[0])
   const word = category === 'FD6' ? '맛집' : '카페'
 
   return (
@@ -56,7 +56,7 @@ export default function Home() {
               {hero.avg_rating && <span className="score">{hero.avg_rating}</span>}
               <span className="who">
                 <strong>{hero.name}</strong>
-                <span>{data.featured ? `이번 주 평가 ${data.featured.week_count}개` : `요즘 ${short(area.name)}에서 많이 찾는 ${word}`}</span>
+                <span>{hero.review_count ? `카페피디아 평가 ${hero.review_count}개` : `요즘 ${short(area.name)}에서 많이 찾는 ${word}`}</span>
               </span>
             </Poster>
           </Link>

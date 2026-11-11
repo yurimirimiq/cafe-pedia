@@ -1,6 +1,5 @@
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
@@ -295,7 +294,7 @@ def category_filter(request):
 
 
 # 홈의 "요즘 뜨는 동네" 줄 (우리 별점이 쌓이기 전에도 홈이 비어 보이지 않도록)
-TRENDING_AREAS = ['성수동', '망원동', '연남동', '익선동']
+TRENDING_AREAS = ['성수동', '망원동', '연남동', '익선동', '을지로', '한남동', '문래동', '서촌']
 AREA_CACHE_SECONDS = 6 * 60 * 60  # 카카오 호출을 아끼려고 동네별 결과를 6시간 저장
 
 
@@ -360,22 +359,13 @@ def rankings(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def home(request):
-    """홈 화면: 누적 평가 수, 이번 주 가장 많이 평가된 곳, 인기 랭킹, 최근 평가된 곳"""
+    """홈 화면: 누적 평가 수, 인기 랭킹, 최근 평가된 곳, 동네별 줄 (큰 사진은 고른 동네의 장소)"""
     places = with_ratings(Place.objects.filter(**category_filter(request), reviews__isnull=False).distinct())
-    week_ago = timezone.now() - timedelta(days=7)
-
-    featured = (
-        places.annotate(week_count=Count('reviews', filter=Q(reviews__created_at__gte=week_ago)))
-        .filter(week_count__gt=0)
-        .order_by('-week_count', '-avg_rating')
-        .first()
-    )
     ranking = ranked(places)[:14]
     recent = places.annotate(last_reviewed=Max('reviews__updated_at')).order_by('-last_reviewed')[:14]
 
     return Response({
         'total_reviews': Review.objects.filter(**{f'place__{k}': v for k, v in category_filter(request).items()}).count(),
-        'featured': {**PlaceSerializer(featured).data, 'week_count': featured.week_count} if featured else None,
         'ranking': PlaceSerializer(ranking, many=True).data,
         'recent': PlaceSerializer(recent, many=True).data,
         'areas': trending_areas(category_filter(request).get('category')),
