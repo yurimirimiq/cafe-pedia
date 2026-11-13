@@ -190,6 +190,7 @@ a { color: inherit; text-decoration: none; }
 .locate { background: var(--oat); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; }
 .filters .chips { margin: 0 0 12px; }
+.search form + .filters { margin-top: 16px; } /* 검색창 테두리와 칩이 붙지 않게 */
 
 /* 캘린더 */
 .cal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 16px; }
@@ -252,12 +253,18 @@ a { color: inherit; text-decoration: none; }
   .me { grid-template-columns: 1fr; gap: 28px; }
 }
 
-/* 좁은 화면(폰): 상단 검색창·메뉴 대신 화면 아래 떠 있는 라떼색 탭 바 (시안: docs/mockup-tabbar.html B안) */
-@media (max-width: 640px) {
-  .nav { padding: 16px 20px; gap: 12px; }
+/* 상단 검색창이 찌그러질 만큼 좁으면 검색창 대신 "검색" 메뉴를 보여준다 */
+@media (max-width: 900px) {
+  .nav { gap: 20px; }
+  .menu { gap: 18px; }
   .nav-search { display: none; }
   .nav-right { margin-left: auto; }
   .mobile-only { display: inline; }
+}
+
+/* 좁은 화면(폰): 상단 검색창·메뉴 대신 화면 아래 떠 있는 라떼색 탭 바 (시안: docs/mockup-tabbar.html B안) */
+@media (max-width: 640px) {
+  .nav { padding: 16px 20px; gap: 12px; }
   .menu {
     position: fixed; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 10;
     height: 62px; padding: 0 8px; justify-content: space-between; align-items: center; gap: 0;
