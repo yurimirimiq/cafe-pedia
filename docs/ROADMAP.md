@@ -180,7 +180,7 @@ cafe-pedia/
 
 ## 8단계: 배포 (4주차)
 
-- [ ] 배포용 PostgreSQL 준비, 백엔드 설정 분리 (`DEBUG=False`, 허용 도메인)
+- [x] 배포 설정: `DATABASE_URL` 이 있으면 PostgreSQL, gunicorn, 관리자 정적 파일(whitenoise), HTTPS 프록시 설정, [render.yaml](../render.yaml)·[vercel.json](../frontend/vercel.json)
 - [ ] 백엔드 → Render, 프론트 → Vercel 배포 (환경변수 등록)
 - [ ] 카카오 개발자 콘솔에 배포 도메인 등록
 - [ ] (선택) 도메인 구입 후 연결 (예: cafepedia.kr)

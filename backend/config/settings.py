@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 from dotenv import load_dotenv
 
@@ -33,6 +34,16 @@ SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Render 가 서비스 주소(예: cafepedia-api.onrender.com)를 이 환경변수로 넣어 준다
+if render_host := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
+    ALLOWED_HOSTS.append(render_host)
+
+if not DEBUG:
+    # 배포 서버는 HTTPS 를 앞단(프록시)에서 처리하고 Django 에는 HTTP 로 넘긴다.
+    # 이 헤더를 믿어야 Django 가 "HTTPS 요청"으로 알아보고 관리자 로그인(CSRF 검사)이 된다
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -51,6 +62,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # 관리자 화면의 CSS·JS 를 gunicorn 이 직접 내보내게 한다 (DEBUG=False 면 Django 는 정적 파일을 안 준다)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     # CORS 미들웨어는 CommonMiddleware 보다 위에 있어야 한다
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -90,6 +103,18 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+# 배포: DATABASE_URL(postgresql://사용자:비밀번호@호스트:포트/DB이름)이 있으면 PostgreSQL 을 쓴다
+if database_url := os.environ.get('DATABASE_URL'):
+    url = urlsplit(database_url)
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': url.path.lstrip('/'),
+        'USER': unquote(url.username or ''),
+        'PASSWORD': unquote(url.password or ''),
+        'HOST': url.hostname,
+        'PORT': url.port or '',
+        'CONN_MAX_AGE': 60,  # 요청마다 새로 연결하지 않고 1분간 재사용
+    }
 
 
 # Password validation
@@ -127,6 +152,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # collectstatic 이 모아 두는 곳
 
 # 사용자가 올린 사진 (개발 중에는 backend/media/ 폴더, 배포 때는 이미지 저장소로 바꾼다)
 MEDIA_URL = '/media/'
