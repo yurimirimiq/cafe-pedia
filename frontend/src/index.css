@@ -87,6 +87,10 @@ a { color: inherit; text-decoration: none; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
 
 /* 홈 */
+.kinds { display: flex; align-items: center; padding: 8px 48px 0; font-size: 26px; font-weight: 800; letter-spacing: -0.04em; }
+.kinds a { color: #c4bbb3; }
+.kinds a[aria-current] { color: var(--ink); }
+.kinds a + a::before { content: ''; display: inline-block; width: 1px; height: 14px; margin: 0 14px; background: var(--line); }
 .hero { display: grid; grid-template-columns: 5fr 7fr; gap: 40px; padding: 24px 48px 56px; align-items: end; }
 .hero h1 { font-size: 64px; font-weight: 800; line-height: 1.08; letter-spacing: -0.05em; }
 .hero p { margin-top: 18px; font-size: 17px; color: var(--mute); line-height: 1.6; }
@@ -242,7 +246,7 @@ a { color: inherit; text-decoration: none; }
 
 /* 중간 폭 */
 @media (max-width: 1000px) {
-  .nav, .hero, .sec, .page, .place-body { padding-left: 24px; padding-right: 24px; }
+  .nav, .kinds, .hero, .sec, .page, .place-body { padding-left: 24px; padding-right: 24px; }
   .place-hero { margin: 8px 24px 0; }
   .hero { grid-template-columns: 1fr; gap: 28px; }
   .hero h1 { font-size: 48px; }
@@ -280,8 +284,9 @@ a { color: inherit; text-decoration: none; }
   /* 폰에선 아이콘만. 글자는 화면에서만 숨긴다 (화면 읽기 프로그램은 읽는다) */
   .menu a .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   main { padding-bottom: 96px; }
-  .hero, .sec, .page, .place-body { padding-left: 20px; padding-right: 20px; }
-  .hero { padding-top: 4px; }
+  .kinds, .hero, .sec, .page, .place-body { padding-left: 20px; padding-right: 20px; }
+  .kinds { padding-top: 0; }
+  .hero { padding-top: 16px; }
   .hero h1 { font-size: 34px; line-height: 1.12; }
   .hero p { font-size: 15px; }
   .pills { flex-wrap: nowrap; overflow-x: auto; }

@@ -5,16 +5,19 @@ import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
 import Poster from '../components/Poster'
 
+// 홈 맨 위 탭 (왓챠피디아의 홈 | 영화 | 책 처럼): 홈은 전체, 나머지는 그 분류만. 고른 탭은 주소(?category=)에 담는다
 const KINDS = [
-  ['', '카페'],
-  ['FD6', '식당'],
-  ['BAR', '술집'],
+  ['', '홈', <>밥 먹고,<br />카페 가고,<br />술 한잔하고.</>],
+  ['FD6', '밥', <>오늘은<br />어디서<br />밥 먹지.</>],
+  ['CE7', '카페', <>오늘은<br />어느 카페<br />가지.</>],
+  ['BAR', '술', <>오늘은<br />어디서<br />한잔하지.</>],
 ]
 const short = (area) => area.replace(/동$/, '') // "성수동" → "성수"
 
 export default function Home() {
-  const [params, setParams] = useSearchParams()
-  const category = params.get('category') ?? ''
+  const [params] = useSearchParams()
+  const kind = KINDS.find(([code]) => code === params.get('category')) ?? KINDS[0] // 모르는 값이면 홈
+  const category = kind[0]
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [areaName, setAreaName] = useState(null)
@@ -33,9 +36,14 @@ export default function Home() {
 
   return (
     <div className="home">
+      <nav className="kinds" aria-label="분류">
+        {KINDS.map(([code, label]) => (
+          <Link key={code} to={code ? `/?category=${code}` : '/'} aria-current={code === category ? 'page' : undefined}>{label}</Link>
+        ))}
+      </nav>
       <section className="hero">
         <div>
-          <h1>밥 먹고,<br />카페 가고,<br />술 한잔하고.</h1>
+          <h1>{kind[2]}</h1>
           <p>
             다녀온 카페·식당·술집에 별점을 남기면
             <br />
@@ -86,11 +94,6 @@ export default function Home() {
         <section className="sec">
           <div className="sec-head">
             <h2>요즘 {short(area.name)}에서 많이 가는 {word}</h2>
-            <div className="seg" role="group" aria-label="분류">
-              {KINDS.map(([code, label]) => (
-                <button key={code} aria-pressed={category === code} onClick={() => setParams(code ? { category: code } : {})}>{label}</button>
-              ))}
-            </div>
           </div>
           <div className="cards fit">{area.places.slice(0, 8).map((p) => <PlaceCard key={p.id} place={p} />)}</div>
           <Link to={`/search?q=${area.name} ${word}`} className="more">{short(area.name)} {word} 더 보기</Link>
