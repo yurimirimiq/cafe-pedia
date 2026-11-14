@@ -8,6 +8,7 @@ import Poster from '../components/Poster'
 const KINDS = [
   ['', '카페'],
   ['FD6', '식당'],
+  ['BAR', '술집'],
 ]
 const short = (area) => area.replace(/동$/, '') // "성수동" → "성수"
 
@@ -28,15 +29,15 @@ export default function Home() {
   const area = data?.areas.find((a) => a.name === areaName) ?? data?.areas[0]
   // 큰 사진 자리: 고른 동네에서 별점이 가장 높은 곳, 아직 아무도 평가 안 했으면 카카오 검색 첫 번째
   const hero = area && ([...area.places].filter((p) => p.avg_rating).sort((a, b) => b.avg_rating - a.avg_rating)[0] ?? area.places[0])
-  const word = category === 'FD6' ? '맛집' : '카페'
+  const word = { FD6: '맛집', BAR: '술집' }[category] ?? '카페'
 
   return (
     <div className="home">
       <section className="hero">
         <div>
-          <h1>밥 먹고,<br />카페 가고,<br />별점 남기고.</h1>
+          <h1>밥 먹고,<br />카페 가고,<br />술 한잔하고.</h1>
           <p>
-            다녀온 카페와 식당을 기록하면
+            다녀온 카페·식당·술집에 별점을 남기면
             <br />
             {data?.total_reviews ? `지금까지 ${data.total_reviews.toLocaleString()}개의 별점이 쌓였어요.` : '취향이 비슷한 사람들의 단골집이 보여요.'}
           </p>

@@ -63,7 +63,7 @@ def with_ratings(places):
 # 카카오 API 하루 호출 한도를 지키기 위해 검색 횟수를 제한한다
 @throttle_classes([AnonRateThrottle, UserRateThrottle])
 def search_places(request):
-    """장소 검색: ?q=망원동 카페&category=CE7(카페)|FD6(식당)&page=1~3&lat=37.556&lng=126.901
+    """장소 검색: ?q=망원동 카페&category=CE7(카페)|FD6(식당)|BAR(술집)&page=1~3&lat=37.556&lng=126.901
 
     카카오에서 찾은 장소를 DB에 저장(이미 있으면 갱신)하고, 우리 DB의 id·평균 별점과 함께 돌려준다.
     위치를 주면 가까운 순 + 거리. 위치는 카카오에 검색할 때만 쓰고 저장하지 않는다.
@@ -75,7 +75,7 @@ def search_places(request):
     if not query:
         return Response({'detail': '검색어를 입력하세요.'}, status=status.HTTP_400_BAD_REQUEST)
     if category and category not in kakao.ALLOWED_CATEGORIES:
-        return Response({'detail': '분류는 CE7(카페) 또는 FD6(식당)이에요.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': '분류는 CE7(카페), FD6(식당), BAR(술집) 중 하나예요.'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         page = int(params.get('page', 1))
     except ValueError:
@@ -196,7 +196,7 @@ def nearby_places(request):
     radius = min(max(radius, 100), 5000)
     category = request.query_params.get('category') or None
     if category and category not in kakao.ALLOWED_CATEGORIES:
-        return Response({'detail': '분류는 CE7(카페) 또는 FD6(식당)이에요.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': '분류는 CE7(카페), FD6(식당), BAR(술집) 중 하나예요.'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         documents = kakao.nearby_places(lat, lng, category, radius)
@@ -288,7 +288,7 @@ def wish(request, place_id):
 
 
 def category_filter(request):
-    """?category=CE7|FD6 이 있으면 그 분류만, 없으면 전체"""
+    """?category=CE7|FD6|BAR 이 있으면 그 분류만, 없으면 전체"""
     category = request.query_params.get('category')
     return {'category': category} if category in kakao.ALLOWED_CATEGORIES else {}
 
@@ -301,7 +301,7 @@ AREA_CACHE_SECONDS = 6 * 60 * 60  # 카카오 호출을 아끼려고 동네별 �
 def trending_areas(category):
     """동네별 카카오 검색 상위 장소. 카카오가 실패한 동네는 건너뛴다"""
     code = category or 'CE7'  # 홈(전체) 탭에서는 카페
-    word = '맛집' if code == 'FD6' else '카페'
+    word = {'FD6': '맛집', 'BAR': '술집'}.get(code, '카페')
     areas = []
     for area in TRENDING_AREAS:
         key = f'trending:{area}:{code}'
@@ -342,7 +342,7 @@ def rankings(request):
     """랭킹: ?category=CE7&tag=조용함&area=마포구 → 베이지안 평균 순 상위 30곳 + 고를 수 있는 키워드·동네"""
     reviewed = Place.objects.filter(**category_filter(request), reviews__isnull=False).distinct()
     category = category_filter(request).get('category')
-    tags = TAG_OPTIONS[category] if category else TAG_OPTIONS['CE7'] + TAG_OPTIONS['FD6']
+    tags = TAG_OPTIONS[category] if category else sum(TAG_OPTIONS.values(), [])
     # 평가된 장소가 많은 동네 순으로 8곳까지 칩으로 보여준다
     areas = [a for a, _ in Counter(' '.join(addr.split()[1:2]) for addr in reviewed.values_list('address', flat=True)).most_common(8)]
 
@@ -417,6 +417,7 @@ def my_summary(request):
             'wishes': request.user.wishlist.count(),
             'cafe': reviews.filter(place__category=Place.Category.CAFE).count(),
             'restaurant': reviews.filter(place__category=Place.Category.RESTAURANT).count(),
+            'bar': reviews.filter(place__category=Place.Category.BAR).count(),
             'followers': request.user.followers.count(),
             'following': request.user.following.count(),
         },

@@ -22,12 +22,14 @@ class User(AbstractUser):
 
 
 class Place(models.Model):
-    """카카오 로컬 API에서 가져온 장소(카페 또는 식당). 카카오 장소 ID로 중복을 막는다."""
+    """카카오 로컬 API에서 가져온 장소(카페·식당·술집). 카카오 장소 ID로 중복을 막는다."""
 
     class Category(models.TextChoices):
         # 값은 카카오 카테고리 그룹 코드와 맞춘다 (CE7 = 카페, FD6 = 음식점)
         CAFE = 'CE7', '카페'
         RESTAURANT = 'FD6', '식당'
+        # 카카오에는 술집 그룹 코드가 없어 우리가 만든 값 (kakao.classify 가 세부 분류를 보고 붙인다)
+        BAR = 'BAR', '술집'
 
     kakao_id = models.CharField('카카오 장소 ID', max_length=20, unique=True)
     category = models.CharField('분류', max_length=3, choices=Category.choices)
@@ -56,6 +58,7 @@ class Place(models.Model):
 TAG_OPTIONS = {
     'CE7': ['커피 맛집', '디저트 맛집', '작업하기 좋음', '조용함', '대화하기 좋음', '뷰 맛집', '좌석 넓음', '콘센트 많음'],
     'FD6': ['혼밥하기 좋음', '가성비', '양 많음', '데이트', '모임하기 좋음', '웨이팅 있음', '친절함', '또 갈래요'],
+    'BAR': ['혼술하기 좋음', '분위기 좋음', '안주 맛집', '위스키 다양', '칵테일 맛집', '와인 맛집', '2차로 딱', '바텐더 친절'],
 }
 MAX_TAGS = 3
 

@@ -221,7 +221,7 @@ a { color: inherit; text-decoration: none; }
 .dist div { flex: 1; min-height: 3px; background: var(--line); border-radius: 4px 4px 0 0; }
 .dist div.top { background: var(--brown); }
 .dist-axis { display: flex; justify-content: space-between; margin-top: 4px; }
-.shelves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.shelves { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
 .shelves div { background: var(--oat); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 2px; }
 
 /* 로그인 · 회원가입 */
@@ -301,6 +301,7 @@ a { color: inherit; text-decoration: none; }
   .cal-cell { min-height: 72px; padding: 4px 2px; }
   .cal-cell .poster { width: 100%; max-width: 40px; border-radius: 6px; }
   .cal-head .btn { margin-left: 0; }
+  .shelves { grid-template-columns: repeat(2, 1fr); }
   .shelves div { padding: 12px; }
 }
 

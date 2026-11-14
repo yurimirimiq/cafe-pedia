@@ -14,8 +14,25 @@ USER_URL = 'https://kapi.kakao.com/v2/user/me'
 logger = logging.getLogger(__name__)
 
 SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
-# 카페피디아가 다루는 분류 (카카오 카테고리 그룹 코드)
-ALLOWED_CATEGORIES = {'CE7', 'FD6'}
+# 카페피디아가 다루는 분류: 카페(CE7), 식당(FD6), 술집(BAR)
+# CE7·FD6 은 카카오 카테고리 그룹 코드 그대로. 카카오에는 술집 그룹이 없고 술집도 FD6(음식점)으로 오기 때문에,
+# 세부 분류에 "술집"이 들어 있으면(예: "음식점 > 술집 > 칵테일바") 우리가 만든 코드 BAR 로 바꿔 둔다
+ALLOWED_CATEGORIES = {'CE7', 'FD6', 'BAR'}
+BAR_WORD = '술집'
+
+
+def classify(documents, category=None):
+    """카카오 document 들의 category_group_code 를 우리 분류로 바꾸고, 우리가 다루는 분류(category 를 주면 그 분류)만 남긴다"""
+    for d in documents:
+        if d['category_group_code'] == 'FD6' and BAR_WORD in d['category_name']:
+            d['category_group_code'] = 'BAR'
+    wanted = {category} if category else ALLOWED_CATEGORIES
+    return [d for d in documents if d['category_group_code'] in wanted]
+
+
+def kakao_code(category):
+    """우리 분류 → 카카오에 보낼 그룹 코드 (술집은 음식점 안에서 찾는다)"""
+    return 'FD6' if category == 'BAR' else category
 
 
 class KakaoError(Exception):
@@ -42,16 +59,20 @@ def _get(url, params):
 
 
 def nearby_places(lat, lng, category=None, radius=1000):
-    """좌표 주변 카페·식당을 가까운 순으로. 각 document 에 distance(미터, 문자열)가 들어 있다.
+    """좌표 주변 카페·식당·술집을 가까운 순으로. 각 document 에 distance(미터, 문자열)가 들어 있다.
 
-    카카오 카테고리 검색은 분류를 하나만 받아서, 전체면 카페·식당을 각각 불러 합친다.
+    카카오 카테고리 검색은 분류를 하나만 받아서, 전체면 분류마다 불러 합친다.
+    술집은 카테고리 검색으로는 식당에 묻혀 거의 안 나와서, 음식점 안에서 "술집" 키워드로 찾는다.
     """
-    documents = []
+    near = {'x': lng, 'y': lat, 'radius': radius, 'sort': 'distance', 'size': 15}
+    documents = {}  # 술집은 식당 호출에도 섞여 오므로 장소 ID로 중복을 없앤다
     for code in [category] if category else sorted(ALLOWED_CATEGORIES):
-        documents += _get(CATEGORY_URL, {
-            'category_group_code': code, 'x': lng, 'y': lat, 'radius': radius, 'sort': 'distance', 'size': 15,
-        })['documents']
-    return sorted(documents, key=lambda d: int(d['distance'] or 0))
+        if code == 'BAR':
+            body = _get(SEARCH_URL, {'query': BAR_WORD, 'category_group_code': 'FD6', **near})
+        else:
+            body = _get(CATEGORY_URL, {'category_group_code': code, **near})
+        documents.update((d['id'], d) for d in classify(body['documents'], category))
+    return sorted(documents.values(), key=lambda d: int(d['distance'] or 0))
 
 
 # 카카오 키워드 검색은 검색어 하나에 45개(15개씩 3페이지)까지만 준다. 그 뒤 페이지는 마지막 결과를 되풀이한다
@@ -59,19 +80,18 @@ MAX_SEARCH_PAGE = 3
 
 
 def search_page(query, category=None, page=1, lat=None, lng=None):
-    """키워드로 카페·식당 검색 → (documents, 다음 페이지가 있는지)
+    """키워드로 카페·식당·술집 검색 → (documents, 다음 페이지가 있는지)
 
-    category 가 없으면 전체를 검색한 뒤 카페·식당만 남긴다.
+    category 가 없으면 전체를 검색한 뒤 카페·식당·술집만 남긴다.
     좌표를 주면 가까운 순으로 받고, 각 document 에 distance(미터, 문자열)가 들어 있다.
     """
     params = {'query': query, 'size': 15, 'page': page}
     if category:
-        params['category_group_code'] = category
+        params['category_group_code'] = kakao_code(category)
     if lat is not None:
         params.update(x=lng, y=lat, sort='distance')
     body = _get(SEARCH_URL, params)
-    documents = [d for d in body['documents'] if d['category_group_code'] in ALLOWED_CATEGORIES]
-    return documents, not body['meta']['is_end'] and page < MAX_SEARCH_PAGE
+    return classify(body['documents'], category), not body['meta']['is_end'] and page < MAX_SEARCH_PAGE
 
 
 def search_places(query, category=None):

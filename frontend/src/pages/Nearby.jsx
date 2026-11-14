@@ -5,7 +5,7 @@ import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 import { getCoords, meters } from '../location'
 
-const CATEGORIES = [['', '전체'], ['CE7', '카페'], ['FD6', '식당']]
+const CATEGORIES = [['', '전체'], ['CE7', '카페'], ['FD6', '식당'], ['BAR', '술집']]
 const RADII = [[500, '500m'], [1000, '1km'], [3000, '3km']]
 const SORTS = [['distance', '가까운 순'], ['rating', '별점 높은 순']]
 
@@ -43,7 +43,7 @@ export default function Nearby() {
       <h1>내 주변</h1>
       {!coords && (
         <div className="locate">
-          <p className="muted">지금 있는 곳 근처의 카페·식당과 별점을 보여드려요. 위치는 검색에만 쓰고 저장하지 않아요.</p>
+          <p className="muted">지금 있는 곳 근처의 카페·식당·술집과 별점을 보여드려요. 위치는 검색에만 쓰고 저장하지 않아요.</p>
           <button className="btn primary" onClick={locate} disabled={status === 'locating'}>
             {status === 'locating' ? '위치 찾는 중…' : '내 위치로 찾기'}
           </button>
@@ -65,7 +65,7 @@ export default function Nearby() {
 
       {status === 'loading' && <p className="muted">주변을 찾는 중…</p>}
       {status === 'error' && <p className="error" role="alert">{message}</p>}
-      {status === 'done' && sorted.length === 0 && <p className="muted">{meters(radius)} 안에 카페·식당이 없어요. 거리를 넓혀 보세요.</p>}
+      {status === 'done' && sorted.length === 0 && <p className="muted">{meters(radius)} 안에 카페·식당·술집이 없어요. 거리를 넓혀 보세요.</p>}
 
       {sorted.length > 0 && status !== 'error' && (
         <ul className="results" aria-busy={status === 'loading'}>

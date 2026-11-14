@@ -13,6 +13,7 @@ const CATEGORIES = [
   ['', '전체'],
   ['CE7', '카페'],
   ['FD6', '식당'],
+  ['BAR', '술집'],
 ]
 
 export default function Search() {
@@ -82,7 +83,7 @@ export default function Search() {
             type="search"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="카페, 식당, 동네 검색 (예: 망원동 국밥)"
+            placeholder="카페, 식당, 술집, 동네 검색 (예: 망원동 국밥)"
             autoFocus
           />
           <button className="btn primary">검색</button>
@@ -115,7 +116,7 @@ export default function Search() {
       {state.status === 'loading' && <p className="muted">찾는 중…</p>}
       {state.status === 'error' && <p className="error" role="alert">{state.message}</p>}
       {state.status === 'done' && state.places.length === 0 && (
-        <p className="muted">"{q}"에 맞는 카페·식당이 없어요. 동네 이름을 붙여서 다시 찾아보세요.</p>
+        <p className="muted">"{q}"에 맞는 카페·식당·술집이 없어요. 동네 이름을 붙여서 다시 찾아보세요.</p>
       )}
 
       {state.places.length > 0 && (

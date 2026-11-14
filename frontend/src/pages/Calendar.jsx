@@ -7,6 +7,7 @@ const FILTERS = [
   ['', '전체'],
   ['CE7', '카페'],
   ['FD6', '식당'],
+  ['BAR', '술집'],
 ]
 
 export default function Calendar() {
@@ -40,7 +41,7 @@ export default function Calendar() {
   const byDay = {}
   for (const v of visits ?? []) (byDay[Number(v.date.slice(8))] ??= []).push(v)
   const isToday = (d) => d === now.getDate() && ym.month === now.getMonth() + 1 && ym.year === now.getFullYear()
-  const cafes = visits?.filter((v) => v.place.category === 'CE7').length ?? 0
+  const count = (code) => visits.filter((v) => v.place.category === code).length
 
   return (
     <section className="page calendar">
@@ -55,7 +56,7 @@ export default function Calendar() {
             <button key={code} className={`chip${category === code ? ' on' : ''}`} aria-pressed={category === code} onClick={() => setCategory(code)}>{label}</button>
           ))}
         </div>
-        {visits && <span className="muted small">이번 달 카페 {cafes}곳, 식당 {visits.length - cafes}곳</span>}
+        {visits && <span className="muted small">이번 달 카페 {count('CE7')}곳, 식당 {count('FD6')}곳, 술집 {count('BAR')}곳</span>}
         <Link to="/search" className="btn primary small">+ 기록 추가</Link>
       </div>
 

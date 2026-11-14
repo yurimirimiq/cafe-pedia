@@ -244,6 +244,25 @@ class PlaceSearchApiTest(TestCase):
         self.assertEqual(names, ['카페', '식당'])
 
     @patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'})
+    def test_kakao_client_splits_bars_from_restaurants(self):
+        # 카카오는 술집도 FD6 으로 준다. 세부 분류에 "술집"이 있으면 BAR
+        docs = [kakao_doc('1', '국밥집', 'FD6', '음식점 > 한식 > 국밥'), kakao_doc('2', '몰트바', 'FD6', '음식점 > 술집 > 칵테일바')]
+        urlopen = self.fake_kakao(docs)
+        self.assertEqual([(d['place_name'], d['category_group_code']) for d in kakao.search_places('성수동', 'BAR')], [('몰트바', 'BAR')])
+        self.assertIn('category_group_code=FD6', urlopen.call_args[0][0].full_url)  # 카카오에는 음식점으로 묻는다
+        self.fake_kakao(docs)
+        self.assertEqual([d['place_name'] for d in kakao.search_places('성수동', 'FD6')], ['국밥집'])
+        self.fake_kakao(docs)
+        self.assertEqual([d['category_group_code'] for d in kakao.search_places('성수동')], ['FD6', 'BAR'])
+
+    @patch('api.kakao.search_page')
+    def test_bar_is_saved_with_bar_tags(self, mock):
+        mock.return_value = (kakao.classify([kakao_doc('9', '몰트바', 'FD6', '음식점 > 술집 > 칵테일바')]), False)
+        place = self.search(category='BAR').json()['places'][0]
+        self.assertEqual((place['category'], place['category_label']), ('BAR', '술집'))
+        self.assertIn('위스키 다양', self.client.get(f"/api/places/{place['id']}/").json()['tag_options'])
+
+    @patch.dict('os.environ', {'KAKAO_REST_API_KEY': 'test'})
     def test_kakao_client_has_more_until_page_3(self):
         self.fake_kakao([], is_end=False)
         self.assertTrue(kakao.search_page('스타벅스', page=2)[1])
@@ -402,7 +421,7 @@ class HomeAndMeApiTest(APITestCase):
     def test_summary(self):
         self.client.force_authenticate(self.me)
         res = self.client.get('/api/me/summary/').json()
-        self.assertEqual(res['counts'], {'reviews': 2, 'comments': 1, 'wishes': 1, 'cafe': 1, 'restaurant': 1, 'followers': 0, 'following': 0})
+        self.assertEqual(res['counts'], {'reviews': 2, 'comments': 1, 'wishes': 1, 'cafe': 1, 'restaurant': 1, 'bar': 0, 'followers': 0, 'following': 0})
         self.assertEqual(res['distribution']['4.0'], 2)
         self.assertEqual(res['top_rating'], '4.0')
         self.assertEqual({p['my_rating'] for p in res['recent']}, {'4.0'})
@@ -454,6 +473,12 @@ class NearbyApiTest(TestCase):
         with patch('api.kakao._get', side_effect=lambda url, p: {'documents': responses[p['category_group_code']]}):
             names = [d['place_name'] for d in kakao.nearby_places(37.5, 126.9)]
         self.assertEqual(names, ['식당', '카페'])
+
+    def test_client_finds_bars_by_keyword_inside_restaurants(self):
+        bar = {**kakao_doc('3', '몰트바', 'FD6', '음식점 > 술집 > 칵테일바'), 'distance': '50'}
+        with patch('api.kakao._get', return_value={'documents': [bar, {**kakao_doc('2', '식당', 'FD6'), 'distance': '100'}]}) as get:
+            self.assertEqual([d['place_name'] for d in kakao.nearby_places(37.5, 126.9, 'BAR')], ['몰트바'])
+        self.assertEqual(get.call_args.args[1]['query'], '술집')
 
 
 class TagApiTest(APITestCase):
@@ -633,6 +658,8 @@ class TrendingAreaTest(APITestCase):
     def test_restaurant_tab_searches_matjip(self, mock):
         self.client.get('/api/home/', {'category': 'FD6'})
         mock.assert_any_call('망원동 맛집', 'FD6')
+        self.client.get('/api/home/', {'category': 'BAR'})
+        mock.assert_any_call('망원동 술집', 'BAR')
 
     @patch('api.kakao.search_places', side_effect=kakao.KakaoError('down'))
     def test_kakao_failure_still_shows_home(self, mock):

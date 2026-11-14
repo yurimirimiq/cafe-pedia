@@ -81,7 +81,7 @@ function NavSearch() {
   return (
     <form className="nav-search" role="search" onSubmit={onSubmit}>
       <label className="sr-only" htmlFor="nav-q">검색어</label>
-      <input id="nav-q" name="q" type="search" placeholder="어디 가고 싶어요? 카페, 식당, 동네" />
+      <input id="nav-q" name="q" type="search" placeholder="어디 가고 싶어요? 카페, 식당, 술집, 동네" />
     </form>
   )
 }

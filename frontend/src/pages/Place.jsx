@@ -305,10 +305,10 @@ export default function Place() {
   )
 }
 
-// 카페 상세에선 근처 식당, 식당 상세에선 근처 카페 (500m 안, 가까운 순 3곳)
+// 카페 상세에선 근처 식당, 식당 상세에선 근처 술집, 술집 상세에선 근처 식당 (500m 안, 가까운 순 3곳)
 function NearbyPicks({ place }) {
   const [picks, setPicks] = useState(null)
-  const other = place.category === 'CE7' ? 'FD6' : 'CE7'
+  const other = place.category === 'FD6' ? 'BAR' : 'FD6'
 
   useEffect(() => {
     const q = new URLSearchParams({ lat: Number(place.latitude).toFixed(3), lng: Number(place.longitude).toFixed(3), radius: 500, category: other })
@@ -320,7 +320,7 @@ function NearbyPicks({ place }) {
   if (!picks?.length) return null
   return (
     <div className="near">
-      <h3>{other === 'FD6' ? '여기서 밥 먹고 가기' : '밥 먹고 여기서 커피 한 잔'}</h3>
+      <h3>{{ CE7: '여기서 밥 먹고 가기', FD6: '밥 먹고 여기서 한잔', BAR: '한잔하기 전에 밥부터' }[place.category]}</h3>
       {picks.map((p) => (
         <Link key={p.id} to={`/place/${p.id}`}>
           <Poster place={p} className="near-photo" />
