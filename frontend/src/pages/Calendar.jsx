@@ -5,9 +5,9 @@ import Poster from '../components/Poster'
 
 const FILTERS = [
   ['', '전체'],
+  ['FD6', '밥'],
   ['CE7', '카페'],
-  ['FD6', '식당'],
-  ['BAR', '술집'],
+  ['BAR', '술'],
 ]
 
 export default function Calendar() {
@@ -56,7 +56,7 @@ export default function Calendar() {
             <button key={code} className={`chip${category === code ? ' on' : ''}`} aria-pressed={category === code} onClick={() => setCategory(code)}>{label}</button>
           ))}
         </div>
-        {visits && <span className="muted small">이번 달 카페 {count('CE7')}곳, 식당 {count('FD6')}곳, 술집 {count('BAR')}곳</span>}
+        {visits && <span className="muted small">이번 달 밥 {count('FD6')}곳, 카페 {count('CE7')}곳, 술 {count('BAR')}곳</span>}
         <Link to="/search" className="btn primary small">+ 기록 추가</Link>
       </div>
 

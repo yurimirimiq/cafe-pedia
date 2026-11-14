@@ -57,9 +57,9 @@ export default function Me() {
       <div>
         <h2>보관함</h2>
         <div className="shelves">
+          <div><b>밥</b><span className="muted small">{counts.restaurant}곳 평가</span></div>
           <div><b>카페</b><span className="muted small">{counts.cafe}곳 평가</span></div>
-          <div><b>식당</b><span className="muted small">{counts.restaurant}곳 평가</span></div>
-          <div><b>술집</b><span className="muted small">{counts.bar}곳 평가</span></div>
+          <div><b>술</b><span className="muted small">{counts.bar}곳 평가</span></div>
           <div><b>가고 싶어요</b><span className="muted small">{counts.wishes}곳</span></div>
         </div>
 

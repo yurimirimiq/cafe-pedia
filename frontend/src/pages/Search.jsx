@@ -11,9 +11,9 @@ import Poster from '../components/Poster'
 
 const CATEGORIES = [
   ['', '전체'],
+  ['FD6', '밥'],
   ['CE7', '카페'],
-  ['FD6', '식당'],
-  ['BAR', '술집'],
+  ['BAR', '술'],
 ]
 
 export default function Search() {

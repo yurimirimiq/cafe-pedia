@@ -5,7 +5,7 @@ import { keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
 import { getCoords, meters } from '../location'
 
-const CATEGORIES = [['', '전체'], ['CE7', '카페'], ['FD6', '식당'], ['BAR', '술집']]
+const CATEGORIES = [['', '전체'], ['FD6', '밥'], ['CE7', '카페'], ['BAR', '술']]
 const RADII = [[500, '500m'], [1000, '1km'], [3000, '3km']]
 const SORTS = [['distance', '가까운 순'], ['rating', '별점 높은 순']]
 

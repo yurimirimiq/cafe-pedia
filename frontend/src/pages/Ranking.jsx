@@ -5,9 +5,9 @@ import PlaceCard from '../components/PlaceCard'
 
 const CATEGORIES = [
   ['', '전체'],
+  ['FD6', '밥'],
   ['CE7', '카페'],
-  ['FD6', '식당'],
-  ['BAR', '술집'],
+  ['BAR', '술'],
 ]
 
 // 랭킹: 분류·키워드·동네로 거른 베이지안 평균 순위. 조건은 주소(?category=&tag=&area=)에 담는다
