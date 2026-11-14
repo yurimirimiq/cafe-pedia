@@ -64,6 +64,7 @@ def nearby_places(lat, lng, category=None, radius=1000):
     카카오 카테고리 검색은 분류를 하나만 받아서, 전체면 분류마다 불러 합친다.
     술집은 카테고리 검색으로는 식당에 묻혀 거의 안 나와서, 음식점 안에서 "술집" 키워드로 찾는다.
     """
+    # shortcut: 식당만 찾을 때 카카오가 준 15곳에서 술집을 빼므로 술집 많은 동네는 15곳보다 적게 나온다, 모자라다는 말이 나오면 다음 페이지까지 불러 채우기
     near = {'x': lng, 'y': lat, 'radius': radius, 'sort': 'distance', 'size': 15}
     documents = {}  # 술집은 식당 호출에도 섞여 오므로 장소 ID로 중복을 없앤다
     for code in [category] if category else sorted(ALLOWED_CATEGORIES):

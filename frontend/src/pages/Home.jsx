@@ -23,10 +23,13 @@ export default function Home() {
   const [areaName, setAreaName] = useState(null)
 
   useEffect(() => {
+    // 탭을 빠르게 바꾸면 먼저 누른 탭의 응답이 늦게 와서 지금 탭을 덮을 수 있어, 지난 요청의 응답은 버린다
+    let stale = false
     setError('')
     apiFetch(`/api/home/${category ? `?category=${category}` : ''}`)
-      .then(setData)
-      .catch((err) => setError(errorText(err)))
+      .then((d) => stale || setData(d))
+      .catch((err) => stale || setError(errorText(err)))
+    return () => { stale = true }
   }, [category])
 
   const area = data?.areas.find((a) => a.name === areaName) ?? data?.areas[0]
