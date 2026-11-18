@@ -16,6 +16,8 @@ export default function KakaoCallback() {
     sent.current = true
     const expected = sessionStorage.getItem('kakao_state')
     sessionStorage.removeItem('kakao_state')
+    const from = sessionStorage.getItem('kakao_from') ?? '/'
+    sessionStorage.removeItem('kakao_from')
 
     if (params.get('error')) return setError('카카오 로그인을 취소했어요.')
     if (!params.get('code') || !expected || params.get('state') !== expected) {
@@ -23,7 +25,7 @@ export default function KakaoCallback() {
     }
     apiFetch('/api/auth/kakao/', { method: 'POST', body: { code: params.get('code') } })
       .then(loginWithTokens)
-      .then(() => navigate('/', { replace: true }))
+      .then(() => navigate(from, { replace: true }))
       .catch((err) => setError(errorText(err, '카카오 로그인에 실패했어요.')))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

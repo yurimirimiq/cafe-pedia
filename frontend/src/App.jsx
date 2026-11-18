@@ -1,5 +1,5 @@
-import { Component } from 'react'
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Component, useEffect } from 'react'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
 import Calendar from './pages/Calendar'
 import Collection from './pages/Collection'
@@ -15,10 +15,18 @@ import Search from './pages/Search'
 import Signup from './pages/Signup'
 import UserProfile from './pages/UserProfile'
 
-// 로그인해야 볼 수 있는 페이지: 로그인 안 했으면 로그인 화면으로 보낸다
+// 로그인해야 볼 수 있는 페이지: 로그인 안 했으면 로그인 화면으로 보낸다 (로그인하면 이 페이지로 돌아오게 주소를 넘긴다)
 function RequireAuth({ children }) {
   const { user } = useAuth()
-  return user ? children : <Navigate to="/login" replace />
+  const { pathname, search } = useLocation()
+  return user ? children : <Navigate to="/login" replace state={{ from: pathname + search }} />
+}
+
+// 로그인·회원가입 화면: 로그인된 순간(방금 로그인·가입한 경우 포함) 오기 전에 보던 화면으로, 없으면 홈으로 보낸다
+function GuestOnly({ children }) {
+  const { user } = useAuth()
+  const { state } = useLocation()
+  return user ? <Navigate to={state?.from ?? '/'} replace /> : children
 }
 
 // 화면을 그리다 코드 에러가 나도 흰 화면 대신 안내를 보여준다. 다른 페이지로 가면(key 가 바뀌면) 다시 그린다
@@ -88,7 +96,13 @@ function NavSearch() {
 
 function Layout() {
   const { user, ready, expired, dismissExpired, logout } = useAuth()
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
+  const navType = useNavigationType()
+  // 다른 화면으로 가면 맨 위에서 시작한다 (React Router 는 스크롤을 그대로 둔다). 뒤로·앞으로 가기(POP)는 브라우저가 기억한 위치에 맡긴다
+  useEffect(() => { if (navType !== 'POP') window.scrollTo(0, 0) }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 헤더의 로그인·회원가입: 로그인하면 지금 화면으로 돌아오게 한다. 이미 로그인 관련 화면이면 받아 둔 주소를 그대로 넘긴다
+  const back = ['/login', '/signup', '/auth/kakao'].includes(pathname) ? location.state : { from: pathname + location.search }
   // 저장된 토큰을 확인하는 동안 화면이 깜빡이지 않게 잠깐 기다린다
   if (!ready) return null
 
@@ -113,8 +127,8 @@ function Layout() {
             </>
           ) : (
             <>
-              <Link to="/login" className="muted">로그인</Link>
-              <Link to="/signup" className="btn dark small">회원가입</Link>
+              <Link to="/login" state={back} className="muted">로그인</Link>
+              <Link to="/signup" state={back} className="btn dark small">회원가입</Link>
             </>
           )}
         </div>
@@ -122,7 +136,7 @@ function Layout() {
       {expired && pathname !== '/login' && (
         <div className="banner" role="alert">
           <span>로그인이 만료됐어요. 다시 로그인해 주세요.</span>
-          <Link to="/login" className="btn dark small">로그인</Link>
+          <Link to="/login" state={back} className="btn dark small">로그인</Link>
           <button className="link small" onClick={dismissExpired} aria-label="안내 닫기">닫기</button>
         </div>
       )}
@@ -139,9 +153,9 @@ function Layout() {
           <Route path="/users/:id" element={<UserProfile />} />
           <Route path="/calendar" element={<RequireAuth><Calendar /></RequireAuth>} />
           <Route path="/me" element={<RequireAuth><Me /></RequireAuth>} />
-          <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
           <Route path="/auth/kakao" element={<KakaoCallback />} />
-          <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
+          <Route path="/signup" element={<GuestOnly><Signup /></GuestOnly>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </ErrorBoundary>

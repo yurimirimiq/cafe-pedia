@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch, errorText } from '../api'
-import { useAuth } from '../auth'
+import { useAuth, useGoLogin } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 
 const SORTS = [
@@ -13,6 +13,7 @@ const SORTS = [
 export default function Collections() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const goLogin = useGoLogin()
   const [params, setParams] = useSearchParams()
   const owner = params.get('user') ?? ''
   const sort = params.get('sort') ?? 'popular'
@@ -34,7 +35,7 @@ export default function Collections() {
   }, [owner, sort, user])
 
   function openForm() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     setError('')
     setForm({ title: '', description: '' })
   }

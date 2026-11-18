@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import { apiFetch, errorText } from '../api'
-import { useAuth } from '../auth'
+import { useAuth, useGoLogin } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
 
@@ -9,7 +9,7 @@ import PlaceCard from '../components/PlaceCard'
 export default function UserProfile() {
   const { id } = useParams()
   const { user } = useAuth()
-  const navigate = useNavigate()
+  const goLogin = useGoLogin()
   const [person, setPerson] = useState(null)
   const [status, setStatus] = useState('loading')
   const [busy, setBusy] = useState(false)
@@ -25,7 +25,7 @@ export default function UserProfile() {
   }, [id, user])
 
   async function toggleFollow() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     setBusy(true)
     setFollowError('')
     try {

@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { apiFetch, errorText } from '../api'
-import { useAuth } from '../auth'
+import { useAuth, useGoLogin } from '../auth'
 import useDismiss from './useDismiss'
 
 // 장소 상세의 "컬렉션에 담기": 내 컬렉션을 눌러 담기·빼기, 새 컬렉션을 만들면서 바로 담기
 export default function CollectionPicker({ place }) {
   const { user } = useAuth()
-  const navigate = useNavigate()
+  const goLogin = useGoLogin()
   const box = useRef(null)
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState(null)
@@ -19,7 +19,7 @@ export default function CollectionPicker({ place }) {
   const load = () => apiFetch(`/api/me/collections/?place=${place.id}`).then(setRows).catch((err) => { setRows([]); setError(errorText(err, '컬렉션을 불러오지 못했어요.')) })
 
   function toggleOpen() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     if (!open) load()
     setError('')
     setOpen(!open)

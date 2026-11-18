@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { errorText } from '../api'
 import { useAuth } from '../auth'
 import KakaoButton from '../components/KakaoButton'
@@ -7,7 +7,7 @@ import { Field } from './AuthForm'
 
 export default function Login() {
   const { login, expired } = useAuth()
-  const navigate = useNavigate()
+  const { state } = useLocation() // 로그인하면 돌아갈 곳 (App.jsx 의 GuestOnly 가 보내 준다)
   const [form, setForm] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,7 +20,6 @@ export default function Login() {
     setError('')
     try {
       await login(form.username, form.password)
-      navigate('/')
     } catch (err) {
       setError(err.status === 401 ? '아이디 또는 비밀번호가 맞지 않아요.' : errorText(err, '로그인하지 못했어요. 잠시 후 다시 시도하세요.'))
     } finally {
@@ -38,7 +37,7 @@ export default function Login() {
       <button className="btn primary" disabled={busy}>{busy ? '로그인하는 중…' : '로그인'}</button>
       <div className="divider"><span>또는</span></div>
       <KakaoButton />
-      <p className="muted">처음이세요? <Link to="/signup">회원가입</Link></p>
+      <p className="muted">처음이세요? <Link to="/signup" state={state}>회원가입</Link></p>
     </form>
   )
 }

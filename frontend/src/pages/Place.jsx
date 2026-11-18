@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { apiFetch, errorText, mediaUrl } from '../api'
 import { saveRecent } from '../recent'
-import { useAuth } from '../auth'
+import { useAuth, useGoLogin } from '../auth'
 import PlaceMap from '../components/PlaceMap'
 import { area, keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
@@ -15,7 +15,7 @@ const today = () => new Date().toLocaleDateString('sv') // YYYY-MM-DD (내 컴�
 export default function Place() {
   const { id } = useParams()
   const { user } = useAuth()
-  const navigate = useNavigate()
+  const goLogin = useGoLogin()
   const [place, setPlace] = useState(null)
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
@@ -35,7 +35,7 @@ export default function Place() {
 
   // 별점·방문일·한 줄 평 저장 (보낸 값만 바뀐다)
   async function saveReview(changes) {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     setBusy(true)
     setError('')
     try {
@@ -74,7 +74,7 @@ export default function Place() {
   }
 
   async function toggleWish() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     setError('')
     try {
       const res = await apiFetch(`/api/places/${id}/wish/`, { method: place.wished ? 'DELETE' : 'POST' })
@@ -86,7 +86,7 @@ export default function Place() {
 
   // 이미지 검색으로 가져온 대표 사진이 엉뚱하면 숨기고 다음 후보로 바꾼다
   async function reportPhoto() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     setBusy(true)
     try {
       const res = await apiFetch(`/api/places/${id}/photo/report/`, { method: 'POST' })
@@ -99,7 +99,7 @@ export default function Place() {
   }
 
   function openComment() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     if (!place.my_review) return setError('별점을 먼저 남겨 주세요.')
     setComment(place.my_review.comment)
     setFiles([])
@@ -334,7 +334,7 @@ function NearbyPicks({ place }) {
 
 // 영수증 인증: 사진을 고르면 바로 서버로 보내고, 가게 이름·결제일 확인 결과를 보여준다
 function ReceiptBox({ place, user, onVerified }) {
-  const navigate = useNavigate()
+  const goLogin = useGoLogin()
   const [state, setState] = useState({ status: 'idle' }) // idle → reading → done | fail
   const mine = place.my_review
 
@@ -365,7 +365,7 @@ function ReceiptBox({ place, user, onVerified }) {
         <p>영수증을 찍어 올리면 가게 이름과 결제일을 확인해서 리뷰에 인증 표시를 달아드려요. 영수증 사진은 저장하지 않아요.</p>
       </div>
       {!user ? (
-        <button className="btn dark" onClick={() => navigate('/login')}>로그인하고 인증하기</button>
+        <button className="btn dark" onClick={goLogin}>로그인하고 인증하기</button>
       ) : !mine ? (
         <p className="muted small">별점을 먼저 남기면 인증할 수 있어요.</p>
       ) : (

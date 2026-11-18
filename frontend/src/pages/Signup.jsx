@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth'
 import KakaoButton from '../components/KakaoButton'
 import { Field } from './AuthForm'
 
 export default function Signup() {
   const { signup } = useAuth()
-  const navigate = useNavigate()
+  const { state } = useLocation() // 가입하면 돌아갈 곳 (App.jsx 의 GuestOnly 가 보내 준다)
   const [form, setForm] = useState({ username: '', nickname: '', password: '' })
   const [errors, setErrors] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -19,7 +19,6 @@ export default function Signup() {
     setErrors(null)
     try {
       await signup(form)
-      navigate('/')
     } catch (err) {
       // 400 이면 서버가 {필드: [메시지]} 형태로 이유를 알려준다
       setErrors(err.status === 400 ? err.data : { form: ['가입하지 못했어요. 잠시 후 다시 시도하세요.'] })
@@ -38,7 +37,7 @@ export default function Signup() {
       <button className="btn primary" disabled={busy}>{busy ? '가입하는 중…' : '가입하기'}</button>
       <div className="divider"><span>또는</span></div>
       <KakaoButton />
-      <p className="muted">이미 계정이 있으세요? <Link to="/login">로그인</Link></p>
+      <p className="muted">이미 계정이 있으세요? <Link to="/login" state={state}>로그인</Link></p>
     </form>
   )
 }

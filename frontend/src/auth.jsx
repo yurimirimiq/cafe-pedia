@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { apiFetch, tokens } from './api'
 
 // 로그인 상태를 앱 전체에서 꺼내 쓸 수 있게 Context 로 공유한다
@@ -51,3 +52,10 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthContext)
+
+// 로그인이 필요한 버튼에서 쓴다: 로그인 화면으로 보내면서 지금 주소(from)를 넘겨, 로그인하면 보던 화면으로 돌아오게 한다
+export function useGoLogin() {
+  const navigate = useNavigate()
+  const { pathname, search } = useLocation()
+  return () => navigate('/login', { state: { from: pathname + search } })
+}

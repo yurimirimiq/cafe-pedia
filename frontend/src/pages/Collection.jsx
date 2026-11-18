@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch, errorText } from '../api'
-import { useAuth } from '../auth'
+import { useAuth, useGoLogin } from '../auth'
 import PlaceCard from '../components/PlaceCard'
 
 // 컬렉션 하나: 제목·소개·만든 사람·좋아요, 담긴 장소. 만든 사람은 고치기·지우기·장소 빼기
@@ -9,6 +9,7 @@ export default function Collection() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const goLogin = useGoLogin()
   const [c, setC] = useState(null)
   const [status, setStatus] = useState('loading')
   const [editing, setEditing] = useState(null) // { title, description }
@@ -28,7 +29,7 @@ export default function Collection() {
   const isOwner = user?.id === c.owner.id
 
   async function toggleLike() {
-    if (!user) return navigate('/login')
+    if (!user) return goLogin()
     await act(async () => {
       const res = await apiFetch(`/api/collections/${id}/like/`, { method: c.liked ? 'DELETE' : 'POST' })
       setC((prev) => ({ ...prev, ...res }))

@@ -1,14 +1,19 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { apiFetch } from '../api'
 
 // "카카오로 시작하기": 카카오 로그인 화면으로 보냈다가 /auth/kakao 로 돌아온다
 export default function KakaoButton() {
   const [error, setError] = useState('')
+  const from = useLocation().state?.from
 
   async function start() {
     // 돌아왔을 때 같은 값인지 확인해서, 남이 만든 로그인 링크로 들어오는 것(CSRF)을 막는다
     const state = crypto.randomUUID().replaceAll('-', '')
     sessionStorage.setItem('kakao_state', state)
+    // 카카오 사이트에 다녀오면 화면이 새로 열리므로, 로그인 후 돌아갈 주소도 같이 적어 둔다
+    if (from) sessionStorage.setItem('kakao_from', from)
+    else sessionStorage.removeItem('kakao_from')
     try {
       const { url } = await apiFetch(`/api/auth/kakao/url/?state=${state}`)
       window.location.href = url
