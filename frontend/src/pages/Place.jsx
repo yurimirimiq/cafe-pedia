@@ -10,6 +10,7 @@ import ShareButton from '../components/ShareButton'
 import CollectionPicker from '../components/CollectionPicker'
 import StarRating from '../components/StarRating'
 
+const MAX_PHOTOS = 4 // 서버(models.MAX_PHOTOS)와 같은 값
 const today = () => new Date().toLocaleDateString('sv') // YYYY-MM-DD (내 컴퓨터 시간 기준)
 
 export default function Place() {
@@ -111,7 +112,7 @@ export default function Place() {
   function pickFiles(e) {
     const picked = [...e.target.files]
     e.target.value = '' // 같은 파일을 다시 고를 수 있게
-    if (photoCount + picked.length > 3) return setError('사진은 3장까지 올릴 수 있어요.')
+    if (photoCount + picked.length > MAX_PHOTOS) return setError(`사진은 ${MAX_PHOTOS}장까지 올릴 수 있어요.`)
     setError('')
     setFiles([...files, ...picked])
   }
@@ -215,32 +216,33 @@ export default function Place() {
           )}
 
           {editingComment && mine && (
-            <form className="comment-form" onSubmit={submitComment}>
-              <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={200} rows={3} placeholder="라떼가 진하고 창가 자리가 좋아요" autoFocus />
-              <div className="photo-picker">
-                {mine.photos.map((ph) => (
-                  <span key={ph.id} className="thumb">
-                    <img src={mediaUrl(ph.url)} alt="내가 올린 사진" />
-                    <button type="button" onClick={() => deletePhoto(ph.id)} aria-label="사진 지우기">×</button>
-                  </span>
-                ))}
-                {files.map((f, i) => (
-                  <span key={i} className="thumb">
-                    <img src={URL.createObjectURL(f)} alt="올릴 사진 미리보기" />
-                    <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label="고른 사진 빼기">×</button>
-                  </span>
-                ))}
-                {photoCount < 3 && (
-                  <label className="thumb add">
-                    <input type="file" accept="image/*" multiple onChange={pickFiles} className="sr-only" />
-                    + 사진
-                  </label>
-                )}
-              </div>
-              <div className="form-foot">
+            <form className="composer" onSubmit={submitComment}>
+              <p className="pin">📍 {area(place.address)} · {place.name}</p>
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={200} rows={3} placeholder="입구부터 예쁘고 라떼가 진해요. 재방문 의사 100%!" aria-label="한 줄 평" autoFocus />
+              {photoCount > 0 && (
+                <div className="shots">
+                  {mine.photos.map((ph) => (
+                    <span key={ph.id}>
+                      <img src={mediaUrl(ph.url)} alt="내가 올린 사진" />
+                      <button type="button" onClick={() => deletePhoto(ph.id)} aria-label="사진 지우기">×</button>
+                    </span>
+                  ))}
+                  {files.map((f, i) => (
+                    <span key={i}>
+                      <img src={URL.createObjectURL(f)} alt="올릴 사진 미리보기" />
+                      <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label="고른 사진 빼기">×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="bar">
+                <label className="btn small">
+                  <input type="file" accept="image/*" multiple onChange={pickFiles} className="sr-only" disabled={photoCount >= MAX_PHOTOS} />
+                  사진 {photoCount}/{MAX_PHOTOS}
+                </label>
                 <span className="muted small">{comment.length}/200</span>
                 <button type="button" className="link" onClick={() => setEditingComment(false)}>취소</button>
-                <button className="btn dark small" disabled={busy}>저장</button>
+                <button className="btn dark small" disabled={busy}>올리기</button>
               </div>
             </form>
           )}
@@ -278,7 +280,7 @@ export default function Place() {
                       ))}
                     </div>
                   )}
-                  {c.tags.length > 0 && <p className="muted small">{c.tags.join(', ')}</p>}
+                  {c.tags.length > 0 && <div className="rv-tags">{c.tags.map((t) => <span key={t}>{t}</span>)}</div>}
                 </div>
                 <span className="mini">{c.rating}</span>
               </div>

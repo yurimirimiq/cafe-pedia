@@ -723,10 +723,10 @@ class ReviewPhotoTest(APITestCase):
         self.assertLessEqual(max(saved.size), 1600)
         self.assertNotIn(0x8825, saved.getexif())  # GPS 정보가 지워졌다
 
-    def test_max_three_photos(self):
+    def test_max_four_photos(self):
         self.rate()
         self.upload(make_jpeg(), make_jpeg())
-        res = self.upload(make_jpeg(), make_jpeg())
+        res = self.upload(make_jpeg(), make_jpeg(), make_jpeg())
         self.assertEqual(res.status_code, 400)
         self.assertEqual(ReviewPhoto.objects.count(), 2)  # 하나도 추가되지 않음
 
