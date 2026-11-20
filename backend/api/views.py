@@ -554,7 +554,7 @@ def kakao_login(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def my_review_photos(request, place_id):
-    """내 리뷰에 사진 올리기 (form-data 의 photos, 여러 장). 리뷰당 최대 4장"""
+    """내 리뷰에 사진 올리기 (form-data 의 photos, 여러 장). 리뷰당 최대 20장"""
     review = Review.objects.filter(user=request.user, place_id=place_id).first()
     if review is None:
         return Response({'detail': '별점을 먼저 남겨 주세요.'}, status=status.HTTP_400_BAD_REQUEST)

@@ -125,7 +125,7 @@ class Wishlist(models.Model):
         return f'{self.user} ♡ {self.place}'
 
 
-MAX_PHOTOS = 4  # 리뷰 하나에 올릴 수 있는 사진 수
+MAX_PHOTOS = 20  # 리뷰 하나에 올릴 수 있는 사진 수
 
 
 class ReviewPhoto(models.Model):

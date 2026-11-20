@@ -145,13 +145,19 @@ a { color: inherit; text-decoration: none; }
 .rv strong { font-size: 15px; }
 .rv p { margin-top: 4px; font-size: 16px; line-height: 1.55; }
 .rv p.small { font-size: 13px; }
-/* 사진 묶음: 1장은 크게, 2장은 나란히, 3장은 왼쪽 크게, 4장은 2×2 */
-.shots { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 2px; margin-top: 12px; max-width: 520px; aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; }
-.shots > * { position: relative; background: var(--oat); }
-.shots > :only-child { grid-column: 1 / -1; }
-.shots > :first-child:nth-last-child(3) { grid-row: span 2; }
+/* 사진 넘겨 보기: 한 장씩 보이고 좌우로 민다 (인스타그램처럼). 넘김은 scroll-snap 이 한다 */
+.shots { position: relative; margin-top: 12px; max-width: 480px; }
+.shots .track { display: flex; aspect-ratio: 1; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; border-radius: 16px; }
+.shots .track::-webkit-scrollbar { display: none; }
+.shots .track > * { position: relative; flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; background: var(--oat); }
 .shots img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.shots button { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(34, 26, 21, 0.75); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
+.shots .count { position: absolute; top: 10px; right: 10px; font-size: 12px; font-weight: 700; color: #fff; background: rgba(34, 26, 21, 0.75); border-radius: 999px; padding: 4px 10px; }
+.shots button { position: absolute; width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(34, 26, 21, 0.75); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }
+.shots .track button { top: 8px; left: 8px; }
+.shots .prev, .shots .next { top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.9); color: var(--ink); }
+.shots .prev { left: 8px; }
+.shots .next { right: 8px; }
+@media (hover: none) { .shots .prev, .shots .next { display: none; } } /* 폰에선 손으로 민다 */
 .rv-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .rv-tags span { font-size: 12px; font-weight: 600; color: var(--brown); background: var(--oat); border-radius: 999px; padding: 4px 10px; }
 .mini { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--brown); letter-spacing: -0.02em; }
@@ -430,6 +436,7 @@ a { color: inherit; text-decoration: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .menu a { transition: none; }
+  .shots .track { scroll-behavior: auto; }
 }
 
 /* 공유하기 */

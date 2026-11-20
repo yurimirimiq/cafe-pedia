@@ -6,11 +6,12 @@ import { useAuth, useGoLogin } from '../auth'
 import PlaceMap from '../components/PlaceMap'
 import { area, keywords } from '../components/PlaceCard'
 import Poster from '../components/Poster'
+import Shots from '../components/Shots'
 import ShareButton from '../components/ShareButton'
 import CollectionPicker from '../components/CollectionPicker'
 import StarRating from '../components/StarRating'
 
-const MAX_PHOTOS = 4 // 서버(models.MAX_PHOTOS)와 같은 값
+const MAX_PHOTOS = 20 // 서버(models.MAX_PHOTOS)와 같은 값
 const today = () => new Date().toLocaleDateString('sv') // YYYY-MM-DD (내 컴퓨터 시간 기준)
 
 export default function Place() {
@@ -23,7 +24,7 @@ export default function Place() {
   const [busy, setBusy] = useState(false)
   const [editingComment, setEditingComment] = useState(false)
   const [comment, setComment] = useState('')
-  const [files, setFiles] = useState([]) // 새로 고른 사진 (아직 안 올림)
+  const [files, setFiles] = useState([]) // 새로 고른 사진 { file, url } (아직 안 올림)
   const [reviewTab, setReviewTab] = useState('all') // 'all' | 'verified'
 
   const load = () =>
@@ -114,7 +115,8 @@ export default function Place() {
     e.target.value = '' // 같은 파일을 다시 고를 수 있게
     if (photoCount + picked.length > MAX_PHOTOS) return setError(`사진은 ${MAX_PHOTOS}장까지 올릴 수 있어요.`)
     setError('')
-    setFiles([...files, ...picked])
+    // 미리보기 주소는 고를 때 한 번만 만든다 (글자를 칠 때마다 사진을 다시 읽지 않게)
+    setFiles([...files, ...picked.map((file) => ({ file, url: URL.createObjectURL(file) }))])
   }
 
   async function deletePhoto(photoId) {
@@ -130,18 +132,21 @@ export default function Place() {
   async function submitComment(e) {
     e.preventDefault()
     if (!(await saveReview({ comment: comment.trim() }))) return
-    if (files.length) {
+    // 한 장씩 올린다: 20장을 한 번에 보내면 서버가 줄이는 동안 요청 시간이 넘어간다
+    setBusy(true)
+    for (const [i, f] of files.entries()) {
       const form = new FormData()
-      files.forEach((f) => form.append('photos', f))
-      setBusy(true)
+      form.append('photos', f.file)
       try {
         await apiFetch(`/api/places/${id}/review/photos/`, { method: 'POST', body: form })
       } catch (err) {
         setBusy(false)
+        setFiles(files.slice(i)) // 이미 올라간 사진은 빼서, 다시 눌러도 두 번 올라가지 않게
+        load()
         return setError(errorText(err, '사진을 올리지 못했어요.'))
       }
-      setBusy(false)
     }
+    setBusy(false)
     setFiles([])
     setEditingComment(false)
     load()
@@ -220,20 +225,20 @@ export default function Place() {
               <p className="pin">📍 {area(place.address)} · {place.name}</p>
               <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={200} rows={3} placeholder="입구부터 예쁘고 라떼가 진해요. 재방문 의사 100%!" aria-label="한 줄 평" autoFocus />
               {photoCount > 0 && (
-                <div className="shots">
+                <Shots>
                   {mine.photos.map((ph) => (
                     <span key={ph.id}>
                       <img src={mediaUrl(ph.url)} alt="내가 올린 사진" />
                       <button type="button" onClick={() => deletePhoto(ph.id)} aria-label="사진 지우기">×</button>
                     </span>
                   ))}
-                  {files.map((f, i) => (
-                    <span key={i}>
-                      <img src={URL.createObjectURL(f)} alt="올릴 사진 미리보기" />
-                      <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label="고른 사진 빼기">×</button>
+                  {files.map((f) => (
+                    <span key={f.url}>
+                      <img src={f.url} alt="올릴 사진 미리보기" />
+                      <button type="button" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label="고른 사진 빼기">×</button>
                     </span>
                   ))}
-                </div>
+                </Shots>
               )}
               <div className="bar">
                 <label className="btn small">
@@ -242,7 +247,7 @@ export default function Place() {
                 </label>
                 <span className="muted small">{comment.length}/200</span>
                 <button type="button" className="link" onClick={() => setEditingComment(false)}>취소</button>
-                <button className="btn dark small" disabled={busy}>올리기</button>
+                <button className="btn dark small" disabled={busy}>{busy ? '올리는 중…' : '올리기'}</button>
               </div>
             </form>
           )}
@@ -274,11 +279,11 @@ export default function Place() {
                   {c.verified && <div className="meta">{Number(c.visited_on.slice(5, 7))}월 {Number(c.visited_on.slice(8))}일 방문</div>}
                   {c.comment && <p>{c.comment}</p>}
                   {c.photos.length > 0 && (
-                    <div className="shots">
+                    <Shots>
                       {c.photos.map((u) => (
                         <a key={u} href={mediaUrl(u)} target="_blank" rel="noreferrer"><img src={mediaUrl(u)} alt={`${c.nickname}님이 올린 사진`} loading="lazy" /></a>
                       ))}
-                    </div>
+                    </Shots>
                   )}
                   {c.tags.length > 0 && <div className="rv-tags">{c.tags.map((t) => <span key={t}>{t}</span>)}</div>}
                 </div>
