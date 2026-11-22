@@ -3,14 +3,17 @@ import { Link } from 'react-router-dom'
 import { apiFetch, errorText } from '../api'
 import { useAuth } from '../auth'
 import PlaceCard from '../components/PlaceCard'
+import Post from '../components/Post'
 
 const SHELVES = [
   ['recent', '최근 평가한 곳'],
+  ['posts', '내 글'],
   ['wishlist', '가고 싶어요'],
   ['feed', '팔로잉 소식'],
 ]
 const EMPTY = {
   recent: '아직 평가한 곳이 없어요. ',
+  posts: '아직 쓴 글이 없어요. 다녀온 곳에 한 줄 평이나 사진을 남겨 보세요. ',
   wishlist: '가고 싶은 곳을 담아 보세요. ',
   feed: '한 줄 평의 닉네임을 눌러 마음에 드는 사람을 팔로우해 보세요. ',
 }
@@ -68,7 +71,9 @@ export default function Me() {
             <button key={key} aria-pressed={shelf === key} onClick={() => setShelf(key)}>{label}</button>
           ))}
         </div>
-        {list.length ? (
+        {list.length && shelf === 'posts' ? (
+          <div className="posts">{list.map((p) => <Post key={p.id} review={p} />)}</div>
+        ) : list.length ? (
           <div className="grid">
             {list.map((p, i) => (
               <PlaceCard key={`${p.id}-${i}`} place={p} rating={p.my_rating ?? p.rating} by={p.nickname} />

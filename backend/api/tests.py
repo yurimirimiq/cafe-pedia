@@ -1004,6 +1004,8 @@ class TasteAndFollowTest(APITestCase):
         self.assertIsNone(profile['top_tag'])  # 친구는 키워드를 고르지 않았다
         self.assertEqual(profile['reviews'][0]['rating'], '3.5')
         self.assertNotIn('friend-login-id', json.dumps(profile))  # 로그인 아이디는 공개하지 않는다
+        self.assertEqual([(p['place']['name'], p['comment']) for p in profile['posts']], [('카페 온기', '무난')])
+        self.assertEqual(self.client.get('/api/me/summary/').json()['posts'], [])  # 별점만 남긴 건 글이 아니다
 
         summary = self.client.get('/api/me/summary/').json()
         self.assertEqual(summary['counts']['following'], 1)

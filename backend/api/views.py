@@ -426,12 +426,25 @@ def my_summary(request):
         'taste': taste(reviews),
         'recent': [rated_place(r, 'my_rating') for r in reviews.order_by('-updated_at')[:12]],
         'wishlist': PlaceSerializer(wished[:12], many=True).data,
+        'posts': posts_of(request.user.reviews),
         # 내가 팔로우한 사람들이 최근 남긴 별점
         'feed': [
             rated_place(r, nickname=r.user.nickname, user_id=r.user_id)
             for r in Review.objects.filter(user__followers__follower=request.user).select_related('user').order_by('-updated_at')[:12]
         ],
     })
+
+
+def posts_of(reviews, limit=24):
+    """한 줄 평이나 사진이 있는 리뷰만 최근 순으로 → 글 목록 (어느 장소 글인지 함께)"""
+    rows = (
+        reviews.select_related('user', 'place').prefetch_related('photos')
+        .exclude(comment='', photos__isnull=True).distinct().order_by('-updated_at')[:limit]
+    )
+    return [
+        {**ReviewSerializer(r).data, 'place': {'id': r.place_id, 'name': r.place.name, 'address': r.place.address}}
+        for r in rows
+    ]
 
 
 def rated_place(review, key='rating', **extra):
@@ -489,6 +502,7 @@ def user_profile(request, user_id):
         # 가장 자주 고른 키워드 하나 (프로필 소개 줄)
         'top_tag': next(iter(Counter(t for tags in reviews.values_list('tags', flat=True) for t in tags).most_common(1)), (None,))[0],
         'reviews': [rated_place(r) for r in reviews[:24]],
+        'posts': posts_of(person.reviews),
     })
 
 

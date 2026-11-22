@@ -4,6 +4,7 @@ import { apiFetch, errorText } from '../api'
 import { useAuth, useGoLogin } from '../auth'
 import CollectionCard from '../components/CollectionCard'
 import PlaceCard from '../components/PlaceCard'
+import Post from '../components/Post'
 
 // 다른 사용자의 프로필: 평가 수·팔로워·팔로잉, 팔로우 버튼, 최근 평가한 곳
 export default function UserProfile() {
@@ -70,6 +71,12 @@ export default function UserProfile() {
           <>
             <h2>{person.nickname}님의 컬렉션</h2>
             <div className="coll-grid profile-colls">{colls.map((c) => <CollectionCard key={c.id} collection={c} />)}</div>
+          </>
+        )}
+        {person.posts.length > 0 && (
+          <>
+            <h2>{person.nickname}님의 글</h2>
+            <div className="posts">{person.posts.map((p) => <Post key={p.id} review={p} />)}</div>
           </>
         )}
         <h2>{person.nickname}님이 평가한 곳</h2>

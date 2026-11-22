@@ -5,6 +5,7 @@ import { saveRecent } from '../recent'
 import { useAuth, useGoLogin } from '../auth'
 import PlaceMap from '../components/PlaceMap'
 import { area, keywords } from '../components/PlaceCard'
+import Post from '../components/Post'
 import Poster from '../components/Poster'
 import Shots from '../components/Shots'
 import ShareButton from '../components/ShareButton'
@@ -226,7 +227,7 @@ export default function Place() {
           {editingComment && mine && (
             <form className="composer" onSubmit={submitComment}>
               <p className="pin">📍 {area(place.address)} · {place.name}</p>
-              <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={200} rows={3} placeholder="입구부터 예쁘고 라떼가 진해요. 재방문 의사 100%!" aria-label="한 줄 평" autoFocus />
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={200} rows={4} placeholder={'먹은 메뉴랑 느낌을 편하게 적어 보세요\n말차푸딩 7,000원 🍵 시럽까지 싹싹 긁어 먹음\n평일 2~3시엔 품절된대요'} aria-label="한 줄 평" autoFocus />
               {photoCount > 0 && (
                 <Shots>
                   {mine.photos.map((ph) => (
@@ -275,27 +276,7 @@ export default function Place() {
                 {reviewTab === 'verified' ? '아직 영수증으로 인증된 리뷰가 없어요. 다녀왔다면 첫 인증 리뷰를 남겨 보세요.' : '아직 한 줄 평이 없어요. 다녀왔다면 첫 한 줄 평을 남겨 보세요.'}
               </p>
             )}
-            {shown.map((c) => (
-              <div key={c.id} className="rv">
-                <Link to={`/users/${c.user_id}`} className="avatar" aria-hidden="true" tabIndex={-1}>{c.nickname[0]}</Link>
-                <div>
-                  <Link to={`/users/${c.user_id}`}><strong>{c.nickname}</strong></Link>
-                  {c.verified && <span className="badge">영수증 인증</span>}
-                  {c.revisit && <span className="again">또 갈래요</span>}
-                  {c.verified && <div className="meta">{Number(c.visited_on.slice(5, 7))}월 {Number(c.visited_on.slice(8))}일 방문</div>}
-                  {c.comment && <p>{c.comment}</p>}
-                  {c.photos.length > 0 && (
-                    <Shots>
-                      {c.photos.map((u) => (
-                        <a key={u} href={mediaUrl(u)} target="_blank" rel="noreferrer"><img src={mediaUrl(u)} alt={`${c.nickname}님이 올린 사진`} loading="lazy" /></a>
-                      ))}
-                    </Shots>
-                  )}
-                  {c.tags.length > 0 && <div className="rv-tags">{c.tags.map((t) => <span key={t}>{t}</span>)}</div>}
-                </div>
-                <span className="mini">{c.rating}</span>
-              </div>
-            ))}
+            {shown.map((c) => <Post key={c.id} review={c} />)}
           </section>
         </div>
 
