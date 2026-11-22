@@ -158,6 +158,7 @@ a { color: inherit; text-decoration: none; }
 .shots .prev { left: 8px; }
 .shots .next { right: 8px; }
 @media (hover: none) { .shots .prev, .shots .next { display: none; } } /* 폰에선 손으로 민다 */
+.rv .again { margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--brown); background: var(--oat); border-radius: 999px; padding: 3px 9px; vertical-align: 2px; }
 .rv-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .rv-tags span { font-size: 12px; font-weight: 600; color: var(--brown); background: var(--oat); border-radius: 999px; padding: 4px 10px; }
 .mini { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--brown); letter-spacing: -0.02em; }

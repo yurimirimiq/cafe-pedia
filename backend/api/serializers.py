@@ -103,7 +103,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'user_id', 'nickname', 'rating', 'comment', 'tags', 'photos', 'verified', 'visited_on', 'updated_at']
+        fields = ['id', 'user_id', 'nickname', 'rating', 'comment', 'tags', 'revisit', 'photos', 'verified', 'visited_on', 'updated_at']
 
 
 class MyReviewSerializer(serializers.ModelSerializer):
@@ -111,7 +111,7 @@ class MyReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['rating', 'comment', 'visited_on', 'tags', 'photos', 'verified']
+        fields = ['rating', 'comment', 'visited_on', 'tags', 'revisit', 'photos', 'verified']
 
     photos = serializers.SerializerMethodField()
     verified = serializers.SerializerMethodField()

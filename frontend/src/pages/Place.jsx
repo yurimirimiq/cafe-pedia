@@ -206,6 +206,9 @@ export default function Place() {
                 <span>방문일</span>
                 <input type="date" value={mine.visited_on} max={today()} disabled={mine.verified} title={mine.verified ? '영수증으로 인증된 날짜예요' : undefined} onChange={(e) => e.target.value && saveReview({ visited_on: e.target.value })} />
               </label>
+              <button className={`chip${mine.revisit ? ' on' : ''}`} aria-pressed={mine.revisit} onClick={() => saveReview({ revisit: !mine.revisit })} disabled={busy}>
+                재방문 의사 {mine.revisit ? '있어요 ✓' : '있어요?'}
+              </button>
               <div className="tag-picker">
                 <span className="muted small">이곳을 키워드로 표현하면? (최대 3개)</span>
                 <div className="chips">
@@ -276,6 +279,7 @@ export default function Place() {
                 <div>
                   <Link to={`/users/${c.user_id}`}><strong>{c.nickname}</strong></Link>
                   {c.verified && <span className="badge">영수증 인증</span>}
+                  {c.revisit && <span className="again">또 갈래요</span>}
                   {c.verified && <div className="meta">{Number(c.visited_on.slice(5, 7))}월 {Number(c.visited_on.slice(8))}일 방문</div>}
                   {c.comment && <p>{c.comment}</p>}
                   {c.photos.length > 0 && (

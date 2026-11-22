@@ -520,6 +520,12 @@ class TagApiTest(APITestCase):
         self.client.put(self.url + 'review/', {'rating': '5.0'}, format='json')
         self.assertEqual(Review.objects.get().tags, ['조용함'])
 
+    def test_revisit_toggle_shows_in_comments(self):
+        self.assertFalse(self.rate(self.users[0], []).json()['my_review']['revisit'])  # 기본은 꺼짐
+        res = self.client.put(self.url + 'review/', {'revisit': True, 'comment': '또 갈 곳'}, format='json')
+        self.assertTrue(res.json()['my_review']['revisit'])
+        self.assertTrue(self.client.get(self.url).json()['comments'][0]['revisit'])
+
     def test_no_tags_by_default(self):
         self.client.force_authenticate(self.users[0])
         self.client.put(self.url + 'review/', {'rating': '3.0'}, format='json')
