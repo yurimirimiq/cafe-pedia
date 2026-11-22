@@ -256,10 +256,12 @@ export default function Place() {
           )}
 
           <section className="reviews" id="comments">
-            <h2>한 줄 평</h2>
-            <div className="seg" role="tablist" aria-label="한 줄 평 보기">
-              <button role="tab" aria-pressed={reviewTab === 'all'} onClick={() => setReviewTab('all')}>전체 <em>{place.comments.length}</em></button>
-              <button role="tab" aria-pressed={reviewTab === 'verified'} onClick={() => setReviewTab('verified')}>영수증 인증 <em>{place.verified_count}</em></button>
+            <div className="sec-head">
+              <h2>한 줄 평</h2>
+              <div className="seg" role="tablist" aria-label="한 줄 평 보기">
+                <button role="tab" aria-pressed={reviewTab === 'all'} onClick={() => setReviewTab('all')}>전체 <em>{place.comments.length}</em></button>
+                <button role="tab" aria-pressed={reviewTab === 'verified'} onClick={() => setReviewTab('verified')}>영수증 인증 <em>{place.verified_count}</em></button>
+              </div>
             </div>
             {reviewTab === 'verified' && place.verified_count > 0 && (
               <div className="verified-sum">

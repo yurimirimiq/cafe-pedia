@@ -130,7 +130,7 @@ a { color: inherit; text-decoration: none; }
 .tag-picker .chips { margin: 8px 0 0; }
 .tag-picker .chip { font-size: 13px; padding: 6px 12px; }
 /* 한 줄 평 쓰기: 테두리 하나 안에 장소·글·사진·도구줄 (X 글쓰기 상자처럼). 포커스는 상자 테두리로 보여준다 */
-.composer { margin: 20px 0 32px; border: 1.5px solid var(--line); border-radius: 20px; padding: 16px 18px 12px; }
+.composer { margin-top: 20px; border: 1.5px solid var(--line); border-radius: 20px; padding: 16px 18px 12px; }
 .composer:focus-within { border-color: var(--ink); }
 .composer .pin { font-size: 14px; font-weight: 700; color: var(--brown); }
 .composer textarea { width: 100%; font: inherit; font-size: 17px; line-height: 1.55; border: 0; padding: 8px 0 0; resize: none; outline: none; background: none; }
@@ -331,14 +331,14 @@ a { color: inherit; text-decoration: none; }
 .rv .meta { font-size: 13px; color: var(--mute); margin-top: 2px; }
 .place-hero .scores { text-align: right; }
 .place-hero .scores small { display: block; margin-top: 10px; font-size: 15px; font-weight: 600; }
-.reviews .seg { margin-bottom: 8px; }
+.reviews { margin-top: 48px; }
 .seg em { font-style: normal; font-weight: 500; color: var(--mute); margin-left: 2px; }
 .verified-sum { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; padding: 18px 20px; border-radius: 14px; background: var(--okbg); color: var(--ok); margin: 12px 0 4px; }
 .verified-sum b { font-family: var(--display); font-size: 40px; letter-spacing: -0.02em; }
 .verified-sum span { font-size: 14px; }
 .verified-sum .vs { margin-left: auto; color: var(--mute); }
-.reviews .empty { padding: 20px 0; }
-.receipt-box { margin-top: 20px; border: 1.5px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
+.reviews .empty { padding: 40px 20px; border-radius: 16px; background: var(--oat); text-align: center; word-break: keep-all; }
+.receipt-box { margin-top: 28px; border: 1.5px solid var(--line); border-radius: 16px; padding: 22px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
 .receipt-box > div { flex: 1 1 320px; }
 .receipt-box h3 { font-size: 17px; font-weight: 800; }
 .receipt-box p { font-size: 14px; color: var(--mute); line-height: 1.6; margin-top: 4px; }
